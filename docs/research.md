@@ -112,3 +112,26 @@ read-only symbol discovery plus local inspection of the journal/map game scripts
 then a single additional native marker under controlled in-game validation. Only
 then implement the game adapter or a narrower native-filter hook. See
 `debugging.md` for concrete evidence collection and `architecture.md` for gates.
+
+## User-supplied GOG/v1.4 runtime evidence
+
+The original broad probe ran three times and reached its 500-symbol limit each
+time. A subsequent targeted scan completed with `symbols=237 inspected=396
+truncated=false`. The reported VM version is `2.5 r7786`. This validates manual
+probe loading and raw table inspection on that user session, not marker behavior.
+
+Observed tables and functions include `QUEST.get_num_active_quests`,
+`QUEST.get_active_id`, `QUEST.get_target_indexes`, `QUEST.get_target_types`,
+`MAP.add_object_icon`, `MAP.add_gor_icon`, `MAP.world_to_window_coords`,
+`map_manager.add_object_specific`, and `map_data.lookup_location_data`.
+`quests_win.m_quest_data` contains `quests` and `quests_rev` tables. Neither their
+contents nor call signatures were printed. Do not infer parameters or meaning
+from names alone. Quest-related fields can have the engine-specific `ui64` type;
+converting IDs to Lua floating-point numbers could lose precision and is not a
+valid normalization strategy.
+
+Framework logs show modules `map_manager`, `map_data`, `quests_win`, and
+`minimap_win` loading, but this does not establish recurring map-open callbacks.
+No raw user logs or proprietary script implementations are redistributed.
+The follow-up passive tracer observes naturally occurring calls and returns,
+without executing exploratory native calls or wrapping tracking setters.

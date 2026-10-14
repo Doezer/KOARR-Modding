@@ -15,7 +15,7 @@ and UI lifetime rules still need runtime evidence. We do not guess them.
 
 ## Download and install the probe
 
-Use `dist/AllQuestMarkers-probe-0.1.0.zip`. Its `mods/AllQuestMarkers/` directory
+Use `dist/AllQuestMarkers-probe-0.1.1.zip`. Its `mods/AllQuestMarkers/` directory
 contains only this project's Lua source; no game assets or framework DLLs.
 
 1. Obtain [Mod Framework v1.4](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9)
@@ -103,3 +103,14 @@ scripts would allow checking signatures, visibility rules, and marker filtering.
 Keep proprietary scripts private; they are for local inspection, not redistribution.
 Actual game execution is required to prove marker placement, interaction, and save
 safety. See the evidence gates in the architecture document.
+
+## Follow-up after the targeted scan
+
+The supplied GOG/v1.4 logs confirm manual probe execution and expose `QUEST`,
+`MAP`, `map_manager`, `map_data`, and `quests_win`. The targeted scan completed
+with 237 symbols and no truncation; native calling signatures remain unknown.
+The VM reports `2.5 r7786`, so stock Lua tests are not engine-version proof.
+
+The optional `trace.lua` records existing game-initiated calls through temporary
+Lua wrappers. It does not create markers or call guessed engine functions. It is
+not automatically loaded by bootstrap or the probe. See [trace instructions](docs/tracing.md).
