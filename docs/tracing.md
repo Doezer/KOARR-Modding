@@ -42,7 +42,9 @@ namespace. Repeated loading refuses to install a second set of wrappers.
 - Opaque session-local labels such as `ui64#3` or `userdata#9`; the tracer never
   invokes userdata or custom-type `__tostring`/`__index` methods. IDs are not cast
   to floating-point numbers. Matching opaque labels aid call correlation only.
-- At most 300 call/return log records. Tables/strings/argument lists are bounded.
+- At most four calls per function and 300 call/return log records overall.
+  Repeated quest polling cannot consume other functions' allowances. Reset renews
+  both the global and per-function budgets. Tables/strings/argument lists are bounded.
 
 No unknown function is executed to discover its parameters. No quest progression,
 tracking setters, fast-travel handlers, or fog functions are wrapped. Map mutators

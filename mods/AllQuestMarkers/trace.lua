@@ -6,10 +6,10 @@ if existing ~= nil then
     print("[AllQuestMarkers][trace] already present; stop it before loading again")
     return existing
 end
-local M = { active = true, records = 0, limit = 300, hooks = {}, sequence = 0 }
+local M = { active = true, records = 0, limit = 300, hooks = {}, sequence = 0, per_function_limit = 4, call_counts = {} }
 local types, format, concat = type, string.format, table.concat
 local raw_next, raw_get, raw_set, raw_equal = next, rawget, rawset, rawequal
-local unpack_values, count_args = unpack, select
+local count_args = select
 local output, protect = print, pcall
 local opaque_ids, next_opaque = {}, 0
 local function emit(message)
@@ -75,7 +75,11 @@ local function install(owner, key, name)
     if types(original) ~= "function" then emit("SKIP " .. name .. " not a raw function"); return end
     local wrapped
     wrapped = function(...)
-        if not M.active or M.records >= M.limit then return original(...) end
+        local logged = M.call_counts[name] or 0
+        if not M.active or M.records >= M.limit or logged >= M.per_function_limit then
+            return original(...)
+        end
+        M.call_counts[name] = logged + 1
         M.sequence = M.sequence + 1
         local sequence = M.sequence
         log_record("CALL " .. sequence .. " " .. name .. " ", ...)
@@ -93,7 +97,8 @@ local function install(owner, key, name)
 end
 function M.reset()
     M.records = 0
-    emit("RESET budget=" .. M.limit)
+    M.call_counts = {}
+    emit("RESET budget=" .. M.limit .. " per-function=" .. M.per_function_limit)
 end
 function M.stop()
     M.active = false
@@ -126,7 +131,7 @@ local function source_info(owner, key, name)
         end
     end)
 end
-emit("BEGIN passive-v1 vm=" .. tostring(_VERSION) .. " budget=" .. M.limit)
+emit("BEGIN passive-v2 vm=" .. tostring(_VERSION) .. " budget=" .. M.limit .. " per-function=" .. M.per_function_limit)
 raw_set(_G, "AQMTrace", M)
 local ok, err = protect(function()
     for _, group in ipairs(groups) do
@@ -140,5 +145,5 @@ local ok, err = protect(function()
     end
 end)
 if not ok then emit("INSTALL FAILED: " .. describe(err, 0, {})); M.stop(); return M end
-emit("READY hooks=" .. #M.hooks .. "; open journal, then world map. Stop: AQMTrace.stop()")
+emit("READY hooks=" .. #M.hooks .. "; open world map, then journal. Stop: AQMTrace.stop()")
 return M

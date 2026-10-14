@@ -135,3 +135,18 @@ Framework logs show modules `map_manager`, `map_data`, `quests_win`, and
 No raw user logs or proprietary script implementations are redistributed.
 The follow-up passive tracer observes naturally occurring calls and returns,
 without executing exploratory native calls or wrapping tracking setters.
+
+## First passive trace result and correction
+
+The supplied `passive-v1` trace installed 30 hooks and stopped with `conflicts=0`.
+Of 150 captured calls, 149 were `QUEST.get_stage(ui64) -> number`; the remaining
+call was `QUEST.get_target_indexes() -> table`, containing one `ui64` value at
+index 1. This verifies those observed call shapes but does not establish that
+all active quest destinations are available. Neither map signatures nor active
+quest enumeration were captured.
+
+The global 300-record limit filled with background quest-stage polling, leaving
+no budget for the later map interaction. `passive-v2` gives every function four
+calls of its own, with the global cap retained. A regression test simulates
+100,000 quest calls before a map call and verifies that map arguments/results
+are still logged. This is a logger correction, not evidence of marker behavior.

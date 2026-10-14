@@ -59,4 +59,24 @@ test("teardown respects later third-party wrappers and makes ours inert",functio
     assert(m.stop()==false and e.QUEST.get_active_id==later)
     local before=#logs;assert(later(7)==7 and c()==1 and #logs==before)
 end)
+test("noisy quest calls cannot starve later map call logging",function()
+    local e,m,f,c,logs=host()
+    -- Model the observed failure: continuous quest polling before the map opens.
+    for i=1,100000 do assert(e.QUEST.get_active_id(i)==i)end
+    assert(c()==100000 and m.records==8 and m.call_counts["QUEST.get_active_id"]==4)
+    assert(e.MAP.add_object_icon("map-window",42)=="map-window")
+    assert(m.records==10)
+    local saw_call,saw_return=false,false
+    for _,line in ipairs(logs)do
+        if line:find("CALL",1,true) and line:find("MAP.add_object_icon",1,true)then saw_call=true end
+        if line:find("RETURN",1,true) and line:find("MAP.add_object_icon",1,true)then saw_return=true end
+    end
+    assert(saw_call and saw_return);assert(m.stop())
+end)
+test("reset renews per-function allowances",function()
+    local e,m,f,c=host()
+    for i=1,20 do e.QUEST.get_active_id(i)end
+    assert(m.records==8);m.reset();assert(m.call_counts["QUEST.get_active_id"]==nil)
+    e.QUEST.get_active_id(21);assert(m.records==2 and c()==21);assert(m.stop())
+end)
 print('RESULT trace '..total..' passed, 0 failed')

@@ -15,7 +15,7 @@ and UI lifetime rules still need runtime evidence. We do not guess them.
 
 ## Download and install the probe
 
-Use `dist/AllQuestMarkers-probe-0.1.1.zip`. Its `mods/AllQuestMarkers/` directory
+Use `dist/AllQuestMarkers-probe-0.1.2.zip`. Its `mods/AllQuestMarkers/` directory
 contains only this project's Lua source; no game assets or framework DLLs.
 
 1. Obtain [Mod Framework v1.4](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9)

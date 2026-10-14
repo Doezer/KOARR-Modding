@@ -1,7 +1,7 @@
 -- Console entry point. It does NOT install guessed hooks or change game objects.
 local base = "mods/AllQuestMarkers/"
 local function load(name) return assert(loadfile(base .. name .. ".lua"))() end
-local M = { version = "0.1.1-probe", status = "game-adapter-unverified" }
+local M = { version = "0.1.2-probe", status = "game-adapter-unverified" }
 local config = load("config")
 assert(type(config) == "table" and type(config.enabled) == "boolean"
     and type(config.categories) == "table" and type(config.max_markers) == "number"

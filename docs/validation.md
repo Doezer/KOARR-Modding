@@ -69,7 +69,7 @@ marker integration works. No native patch is included.
 
 ## Distribution classification
 
-`AllQuestMarkers-probe-0.1.1.zip` is a **probe/core development package**, not an
+`AllQuestMarkers-probe-0.1.2.zip` is a **probe/core development package**, not an
 all-quest-marker release. Its installable layout is `mods/AllQuestMarkers/`, with
 manual console loading. It contains no proprietary game assets, third-party DLLs,
 Reforged code, copied third-party mod files or generated fake bindings. Publish a
@@ -77,9 +77,10 @@ functional release only after completing the evidence gates and runtime checklis
 
 ## Passive tracer checks
 
-Nine additional stock Lua 5.1 tests validate zero host calls during installation,
+Eleven additional stock Lua 5.1 tests validate zero host calls during installation,
 exact argument and multiple-return forwarding (including nil slots), native error
 propagation, logging failure isolation, no metamethod execution during logging,
 bounded logging, identity restoration, duplicate-load prevention, and coexistence
-with later third-party wrappers. These do not validate the tracer in Havok Script.
+with later third-party wrappers, per-function logging budgets, and quota reset.
+These do not validate the tracer in Havok Script.
 The user-supplied targeted scan validates probe execution only.

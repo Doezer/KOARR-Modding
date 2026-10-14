@@ -25,12 +25,12 @@ def build(output, trigger=None):
             'trigger': trigger, 'path': '.\\mods\\AllQuestMarkers\\probe.lua'
         }]}, indent=2) + '\n').encode()
     payload['PACKAGE-STATUS.txt'] = (
-        'AllQuestMarkers 0.1.1 — PROBE AND TESTED CORE ONLY\n'
+        'AllQuestMarkers 0.1.2 — PROBE AND TESTED CORE ONLY\n'
         'No game adapter is implemented. This package DOES NOT display quest markers.\n'
         + ('Probe autoload trigger supplied by operator; runtime compatibility unverified.\n'
            if trigger else 'Manual console load; no autoload manifest or guessed trigger.\n')
     ).encode()
-    archive = output / 'AllQuestMarkers-probe-0.1.1.zip'
+    archive = output / 'AllQuestMarkers-probe-0.1.2.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
         for name, data in sorted(payload.items()):
             entry = zipfile.ZipInfo(name, date_time=(2026, 10, 14, 0, 0, 0))
