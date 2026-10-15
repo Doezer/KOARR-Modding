@@ -62,8 +62,7 @@ Kingdoms of Amalur Re-Reckoning/
 
 If you used the earlier two-file test version, remove
 `mods/all_quest_markers_world_scope.json`; its patch is included in the combined
-file. An old `mods/all_quest_markers_probe.json` and diagnostic Lua helpers are
-not required by this release.
+file.
 
 ## Scope and compatibility
 
@@ -109,8 +108,7 @@ log lines for `all_quest_markers_native.json`.
 - [Native patch details](https://github.com/Doezer/KOARR-World-map-enhanced/blob/main/docs/native-patches.md)
 - [Published Nexus description (BBCode)](https://github.com/Doezer/KOARR-World-map-enhanced/blob/main/docs/nexus-description.txt)
 
-Historical Lua research remains in the repository for reference and is excluded
-from the release ZIP. Game files and framework binaries are not bundled.
+Game files and framework binaries are not bundled.
 
 ## Credits and license
 

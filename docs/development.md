@@ -5,7 +5,7 @@ package with Python 3 (no extra Python packages):
 
 ```sh
 python3 -m unittest discover -s tests -p 'test_*.py' -v
-python3 tools/package.py
+python3 tools/package.py --output build
 ```
 
 To check signatures against your own legally installed executable, without
@@ -18,8 +18,9 @@ python3 tools/verify_executable.py /path/to/koa.exe
 The verifier accepts only the exact analyzed SHA-256. Passing it checks the file
 and signatures; it does not establish every aspect of in-game compatibility.
 
-Historical Lua prototype tests can also run with `./tools/setup_lua.sh` followed by
-`./tools/check.sh`. They test the earlier core/helpers and do not validate the
-native mod in the game. See [native patch details](native-patches.md) and
-[historical research](runtime-findings.md).
+The package tests check the install layout, manifest structure, reproducibility
+and checksum. They do not execute the game. See the [native patch details](native-patches.md)
+for implementation and validation evidence.
 
+The `build/` directory is ignored by Git. Published ZIPs in `dist/` are retained
+for the existing download links; update them only as part of a new release.
