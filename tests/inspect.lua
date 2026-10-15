@@ -25,6 +25,7 @@ local function host(options)
         end,close=function()return true end}
     end}
     if options.no_dump then env.string={} end
+    if options.no_io then env.io={} end
     if options.tracer then env.AQMTrace={} end
     local f=assert(loadfile(path));setfenv(f,env)
     local result=f()
@@ -52,5 +53,22 @@ test('refuses export while wrappers are present',function()
 end)
 test('write failure reports incomplete output rather than success',function()
     local r=host({write_fail=true});assert(not r.ok and r.reason=='write-failed')
+end)
+test('missing io.open exports complete bytecode to console without touching files',function()
+    local r,files,calls,logs,env=host({no_io=true})
+    assert(r.ok and r.path=='console' and r.functions==2 and calls==0 and next(files)==nil)
+    local data={};local begin_seen,end_seen=false,false
+    for _,line in ipairs(logs)do
+        if line:find('BEGIN console-export-v2',1,true)then begin_seen=true end
+        if line:find('END console-export-v2',1,true)then end_seen=true end
+        local content=line:match('^%[AllQuestMarkers%]%[inspect%-data%] (.*)$')
+        if content then data[#data+1]=content end
+    end
+    assert(begin_seen and end_seen)
+    local report=table.concat(data,'\n')..'\n'
+    local encoded=report:match('FUNCTION minimap_win.marker %d+\n(.-)END\n');assert(encoded)
+    encoded=encoded:gsub('%s','')
+    local bytes=encoded:gsub('..',function(h)return string.char(tonumber(h,16))end)
+    assert(bytes==string.dump(env.minimap_win.marker))
 end)
 print('RESULT inspect '..passed..' passed, 0 failed')

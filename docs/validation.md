@@ -69,7 +69,7 @@ marker integration works. No native patch is included.
 
 ## Distribution classification
 
-`AllQuestMarkers-probe-0.1.3.zip` is a **probe/core development package**, not an
+`AllQuestMarkers-probe-0.1.4.zip` is a **probe/core development package**, not an
 all-quest-marker release. Its installable layout is `mods/AllQuestMarkers/`, with
 manual console loading. It contains no proprietary game assets, third-party DLLs,
 Reforged code, copied third-party mod files or generated fake bindings. Publish a
@@ -87,9 +87,9 @@ The user-supplied targeted scan validates probe execution only.
 
 ## Inspection exporter checks
 
-Six stock Lua tests validate serialization without running the inspected
+Seven stock Lua tests validate serialization without running the inspected
 functions, exact bytecode round-trip through the hex report, preserving existing
 files, refusing unreadable output candidates, missing-library handling, refusing
-active trace wrappers, and write-error reporting. The exporter is not yet tested
+active trace wrappers, write-error reporting, and complete console export when io.open is missing. The exporter is not yet tested
 in the proprietary VM. The latest user trace validates observed native call
 shapes and clean tracer teardown, not all-quest marker behavior.

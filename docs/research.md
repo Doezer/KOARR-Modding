@@ -182,3 +182,14 @@ optional local inspection exporter uses standard `string.dump` without executing
 the exported functions, preserves prior output files, and writes a private hex
 bundle. Compatibility of that standard dumper with the target VM remains to be
 tested; Havok bytecode must not be treated as stock Lua executable bytecode.
+
+## Console export correction
+
+The user's standard-library check reported `dump=function;open=nil`. The initial
+file exporter therefore could not run. An attempted long inline console export
+was cut off mid-loop by the F2 field and did not compile. The corrected helper
+retains the short loadfile entry command and falls back to framed console output
+when file writing is unavailable. A regression test validates the complete hex
+bytecode output under the exact missing-io.open capability combination, without
+calling the serialized functions. No functions were exported by the failed long
+command; source analysis is still pending the corrected report.

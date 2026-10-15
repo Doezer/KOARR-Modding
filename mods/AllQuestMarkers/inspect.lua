@@ -11,22 +11,37 @@ end
 local strings, files = rawget(_G, "string"), rawget(_G, "io")
 local dump = type(strings) == "table" and rawget(strings, "dump")
 local open = type(files) == "table" and rawget(files, "open")
-if type(dump) ~= "function" or type(open) ~= "function" then
-    emit("Unavailable: standard string.dump or io.open; no game functions were called.")
+if type(dump) ~= "function" then
+    emit("Unavailable: standard string.dump; no game functions were called.")
     return { ok = false, reason = "missing-standard-library" }
 end
 local path, file
-for i = 1, 20 do
-    local candidate = string.format("AllQuestMarkers-inspection-%03d.txt", i)
-    local existing, read_error, read_code = open(candidate, "rb")
-    if existing then
-        existing:close()
-    elseif read_code == 2 then -- ENOENT; never overwrite an unreadable existing file.
-        local created = open(candidate, "wb")
-        if created then path, file = candidate, created; break end
-    else
-        emit("Cannot safely check " .. candidate .. ": " .. tostring(read_error))
-        return { ok = false, reason = "cannot-check-output" }
+local console = type(open) ~= "function"
+if console then
+    path = "console"
+    emit("BEGIN console-export-v2; file writing unavailable, exporting to console")
+    file = {
+        write = function(self, text)
+            for line in text:gmatch("[^\r\n]+") do
+                print("[AllQuestMarkers][inspect-data] " .. line)
+            end
+            return self
+        end,
+        close = function() return true end,
+    }
+else
+    for i = 1, 20 do
+        local candidate = string.format("AllQuestMarkers-inspection-%03d.txt", i)
+        local existing, read_error, read_code = open(candidate, "rb")
+        if existing then
+            existing:close()
+        elseif read_code == 2 then -- ENOENT; never overwrite an unreadable existing file.
+            local created = open(candidate, "wb")
+            if created then path, file = candidate, created; break end
+        else
+            emit("Cannot safely check " .. candidate .. ": " .. tostring(read_error))
+            return { ok = false, reason = "cannot-check-output" }
+        end
     end
 end
 if not file then
@@ -41,7 +56,10 @@ local function hex(data)
     return (data:gsub(".", function(c) return string.format("%02x", string.byte(c)) end))
 end
 local total, dumped, skipped = 0, 0, 0
-local modules = { "minimap_win", "map_manager", "quests_win", "map_data", "target_win_manager" }
+local requested = ...
+local allowed = { minimap_win=true, map_manager=true, quests_win=true, map_data=true, target_win_manager=true }
+local modules = { "minimap_win", "map_manager", "quests_win" }
+if type(requested) == "string" and allowed[requested] then modules = { requested } end
 local ok, err = pcall(function()
     write("AQM-INSPECTION 1\nVM " .. tostring(_VERSION) .. "\n")
     for _, name in ipairs(modules) do
@@ -81,9 +99,11 @@ if not ok or not closed then
     emit("Export failed: " .. tostring(ok and close_error or err) .. "; incomplete file: " .. path)
     return { ok = false, path = path, reason = "write-failed" }
 end
-emit("SAVED " .. path .. " functions=" .. dumped .. " bytes=" .. total .. " skipped=" .. skipped)
+emit((console and "END console-export-v2" or ("SAVED " .. path)) .. " functions=" .. dumped .. " bytes=" .. total .. " skipped=" .. skipped)
 if dumped == 0 then
     emit("No functions exported: this VM may not support dumping these functions. Send this console output.")
+elseif console then
+    emit("Copy the console output from BEGIN console-export-v2 through END console-export-v2 and share privately.")
 else
     emit("The file is beside koa.exe when launched from the game folder. Upload it privately here; do not publish it.")
 end

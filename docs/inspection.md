@@ -13,19 +13,31 @@ engine calls or another interaction trace.
    assert(loadfile('mods/AllQuestMarkers/inspect.lua'))()
    ```
 
-4. Look for `[AllQuestMarkers][inspect] SAVED AllQuestMarkers-inspection-001.txt`.
+4. In the confirmed GOG VM, `string.dump` exists but `io.open` does not. The helper
+   now falls back to console output. Copy everything from `BEGIN console-export-v2`
+   through `END console-export-v2` and upload it as private pasted text. No disk
+   file is expected in this mode.
+5. On a VM with file-writing support, look for `[AllQuestMarkers][inspect] SAVED AllQuestMarkers-inspection-001.txt`.
    The number increases if a previous file exists. The file is in the game's
    working directory, normally beside `koa.exe`. Upload that text file privately
    in this conversation. Do not post it publicly or put it in the GitHub repo.
-5. If it prints an error or exports zero functions, send that console message.
+6. If it prints an error or exports zero functions, send that console message.
    Missing standard-library support is a diagnostic result, not an installation
    success. Do not attempt to fix it with unknown native calls.
 
-The exporter examines only raw Lua function fields of `minimap_win`, `map_manager`,
-`quests_win`, `map_data` and `target_win_manager`. It never invokes those functions,
+By default the exporter examines only raw Lua function fields of `minimap_win`,
+`map_manager` and `quests_win`. An optional argument can select one known module
+for a smaller export, for example:
+
+```lua
+assert(loadfile('mods/AllQuestMarkers/inspect.lua'))('minimap_win')
+```
+
+The allowlist also includes `map_data` and `target_win_manager`. It never invokes those functions,
 dumps save data, starts quests, changes tracking, installs hooks, or loads the
-serialized bytecode. Standard `string.dump` and `io.open` must be exposed by the
-VM; that has not yet been demonstrated in the target build.
+serialized bytecode. Standard `string.dump` must be exposed. It was confirmed present in the target
+VM; serialization of the game functions themselves remains unverified. File
+writing is optional.
 
 Output contains compiled proprietary game Lua, not ordinary source text. It is
 for private local analysis only. This project distributes no exported game code.
@@ -38,3 +50,8 @@ binary payload. The hex text is about twice the binary size. C/native functions
 that cannot be dumped are reported as skipped. No output bytecode is executed
 by the helper or tests. No uninstaller action beyond deleting the inspection text
 file and optional helper is necessary; no persistent hooks or globals are added.
+
+The long inline export command was truncated by the F2 code field, producing a
+compile error ending near `for i=1,#s,12`. Keep the export in the helper script
+and use only the short loadfile command above in F2. The field length limit is
+not established precisely; the screenshot demonstrates truncation.
