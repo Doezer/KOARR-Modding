@@ -1,31 +1,32 @@
 [b]All Quest Markers[/b]
 
-Show objective markers for untracked quests alongside your tracked quest on the world map in Kingdoms of Amalur: Re-Reckoning. See where your other quests lead without repeatedly switching the tracked quest, including distant objectives that normally appear only when tracked.
+Show objective markers for untracked quests alongside your tracked quest on the world map.
+See where your other quests lead without repeatedly switching the tracked quest, including distant objectives that normally appear only when tracked.
 
 [b]Features[/b]
 [list]
-[*]Displays native objective markers for untracked quests on the world map.
-[*]Includes distant objectives, beyond the earlier local-map-only behavior.
-[*]Handles initial map population and subsequent target updates.
-[*]Keeps your selected quest as the tracked quest.
-[*]Loads automatically through Mod Framework; no F2 command is needed.
+[*]Displays native objective markers for untracked quests on the world map, beyond the vanilla local-map-only behavior.[/*]
+[*]Keeps your selected quest as the tracked quest.[/*]
 [/list]
 
 [b]Requirements[/b]
-Kingdoms of Amalur: Re-Reckoning on PC and [url=https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9]Mod Framework v1.4 by DevCortez[/url]. Install the framework separately using its author's instructions.
+[url=https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9]Mod Framework v1.4 by DevCortez[/url]. Install the framework separately using its author's instructions.
 
-Confirmed working by the tester on the GOG edition with Mod Framework v1.4. Steam, Epic, other executable builds/framework versions and all DLC combinations have not been verified. The original 2012 Reckoning and console editions are unsupported.
+Confirmed working on the GOG edition with Mod Framework v1.4 and Fatesworn edition.
+Steam, Epic, other executable builds/framework versions and all DLC combinations have not been verified.
 
-[b]Installation[/b]
-[list=1]
-[*]Close the game and install Mod Framework v1.4.
-[*]Extract this mod's ZIP into the game folder containing koa.exe, merging the mods folder.
-[*]Check that the installed file is mods/all_quest_markers_native.json.
-[*]Start the game, load your save and open the world map.
+[b]Automatic Installation[/b]
+
+[list]
+[*]Install using Vortex[/*]
 [/list]
-
-If you used the earlier two-file test version, remove all_quest_markers_world_scope.json from mods; its patch is included in the combined file. Old diagnostic/probe files are not needed.
-
+[b]Manual Installation[/b]
+[list=1]
+[*]Close the game and install Mod Framework v1.4.[/*]
+[*]Extract this mod's ZIP into the game folder containing koa.exe, merging the mods folder.[/*]
+[*]Check that the installed file is mods/all_quest_markers_native.json.[/*]
+[*]Start the game, load your save and open the world map.[/*]
+[/list]
 [b]Scope and compatibility[/b]
 This release shows world-map objectives using the game's native marker data. The local map and minimap retain their original behavior. It does not create destinations the engine cannot resolve, and it has no larger-region filter or configuration menu.
 
@@ -34,11 +35,13 @@ The mod applies three patches to game memory. It does not modify koa.exe on disk
 The combined mod has been confirmed working in-game, but every quest, interior, DLC, undiscovered-area and save/load case has not been exhaustively tested. Existing earlier visibility checks remain, but complete preservation of reveal rules is not claimed.
 
 [b]Uninstall[/b]
-Close the game, delete mods/all_quest_markers_native.json, then restart. Keep the shared mods folder and framework files required by other mods.
-
+[list]
+[*]Disable in Vortex, or[/*]
+[*]delete mods/all_quest_markers_native.json.[/*]
+[/list]
 [b]Troubleshooting[/b]
 Make sure the JSON is directly inside mods, not an extra nested folder or a .json.txt file. Restart after installation. For missing markers, include your game store/build, framework version, other mods, affected quest/region and startup log lines for all_quest_markers_native.json.
 
 [b]Credits and source[/b]
-Mod Framework by DevCortez. Thanks to the in-game tester for diagnostic reports and validation.
+Mod Framework by DevCortez.
 [url=https://github.com/Doezer/KOARR-World-map-enhanced]Source code, installation details and releases[/url]. Original project code and documentation are MIT licensed. Game files and framework binaries are not included.
