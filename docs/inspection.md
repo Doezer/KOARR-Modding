@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Private inspection export
 
 The focused trace confirms runtime call shapes but not the game logic that

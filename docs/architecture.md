@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Architecture and evidence gates
 
 ## Implemented components

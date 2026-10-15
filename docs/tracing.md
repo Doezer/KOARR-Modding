@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Passive call tracer
 
 The targeted GOG/v1.4 scan identified engine functions, but not their calling

@@ -1,127 +1,132 @@
-# AllQuestMarkers
+# All Quest Markers
 
-Confirmed validation target: **GOG PC edition with Mod Framework v1.4** (user-provided).
-The exact game executable build/file version and DLC set have not been supplied.
-Compatibility and in-game behavior remain untested.
+Show objective markers for untracked quests alongside your tracked quest on the
+world map in **Kingdoms of Amalur: Re-Reckoning**. This includes distant objectives
+that the original game only shows while their quest is tracked.
 
-**Status: partially implemented; game integration blocked. This is a runnable
-read-only probe and tested Lua core, not a working all-quest map mod. It currently
-adds no markers. No in-game functionality has been validated.**
+**Version 1.0.0.** The combined three-patch mod has been confirmed working in-game
+by its tester on the GOG PC edition with Mod Framework v1.4. Other stores, game
+builds, DLC combinations and every quest/visibility case have not been verified.
 
-The intended mod displays legitimately revealed destinations for all active,
-incomplete quest objectives while preserving native tracked-quest and fast-travel
-markers. The PC Re-Reckoning quest/map binding, module triggers, method signatures,
-and UI lifetime rules still need runtime evidence. We do not guess them.
+## Download
 
-## Download and install the probe
+- [Download AllQuestMarkers-1.0.0.zip](https://github.com/Doezer/KOARR-World-map-enhanced/releases/download/v1.0.0/AllQuestMarkers-1.0.0.zip)
+- [Latest release and checksum](https://github.com/Doezer/KOARR-World-map-enhanced/releases/latest)
 
-Use `dist/AllQuestMarkers-probe-0.1.4.zip`. Its `mods/AllQuestMarkers/` directory
-contains only this project's Lua source; no game assets or framework DLLs.
+Use the release ZIP for installation. The repository also retains historical Lua
+research helpers; they are not required or included in the release ZIP.
 
-1. Obtain [Mod Framework v1.4](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9)
-   from its author and install it beside `koa.exe` using the author's instructions.
-   Compatibility with your current game build must be checked separately. This
-   repository does not install or update the framework.
-2. With the game closed, extract this ZIP into the folder containing `koa.exe`.
-   Do not overwrite an existing `mods/AllQuestMarkers` installation without backing
-   up your settings. The default package contains **no autoload manifest** because
-   no usable quest/map script trigger has been verified.
-3. Start the game, load a save, and use the Mod Framework's own console. Enter this
-   single line (no spaces; its source reads a whitespace-delimited command):
+## Requirements
 
-   ```lua
-   assert(loadfile('mods/AllQuestMarkers/probe.lua'))()
-   ```
+- Kingdoms of Amalur: Re-Reckoning, PC. Tested on the supplied GOG executable.
+- [Mod Framework v1.4 by DevCortez](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9),
+  installed according to its author's instructions.
 
-   It logs matching Lua symbol paths/types to the framework console. `loadfile` and
-   the standard Lua libraries must be exposed in that VM; if unavailable, stop and
-   capture the exact error. The script is syntactically tested under stock Lua 5.1,
-   but loading it in Havok Script remains untested.
-4. Repeat with the map open, after closing it, and after a region/save change.
-   Follow [debugging](docs/debugging.md). Do not call discovered engine functions
-   merely because their names resemble getters.
+The framework is a separate download. This mod does not include framework DLLs.
+The original 2012 Kingdoms of Amalur: Reckoning and console editions are unsupported.
 
-The [F2 Console](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/14)
-is optional. Its page confirms arbitrary Lua execution from `mods/console.lua`,
-but the default framework console is sufficient for this probe if `loadfile` is
-exposed. This package does not replace the F2 Console's files or listeners.
+## Installation
 
-## Disable or uninstall
+1. Close the game and install Mod Framework v1.4 if needed.
+2. Extract the release ZIP into the game folder containing `koa.exe`. Merge the
+   `mods` folder with your existing one.
+3. Confirm the file is at `mods/all_quest_markers_native.json` beside `koa.exe`.
+4. Start the game, load your save and open the world map. It loads automatically;
+   no console command or F2 Console mod is required.
 
-The default probe installs no hooks, listeners, persistent globals, or map objects.
-Exit the game and remove only `mods/AllQuestMarkers/`. If you generated an optional
-probe autoload manifest, also remove `mods/all_quest_markers_probe.json`. Do not
-remove other mods or shared framework files. No save edits or packed-asset patches
-are made.
+After extraction, the relevant layout is:
 
-If experimenting with an externally supplied adapter, call the returned module's
-`detach()` and confirm it returns true before hot reload. Cleanup failures remain
-retryable; exit the game before removing files. There is no verified game adapter
-in this release.
+```text
+Kingdoms of Amalur Re-Reckoning/
+├── koa.exe
+└── mods/
+    └── all_quest_markers_native.json
+```
 
-## Develop and test
+If you used the earlier two-file test version, remove
+`mods/all_quest_markers_world_scope.json`: its patch is already included here.
+Remove an old `mods/all_quest_markers_probe.json` if present; it belongs to the
+retired diagnostic releases. Other mods and framework files can stay installed.
 
-From this checkout on Linux, with GCC, make, curl and Python 3 available:
+## Features and scope
+
+- Displays native objective markers for untracked quests on the world map.
+- Allows distant untracked objectives through the extra world-map renderer check.
+- Covers both initial map population and subsequent target updates.
+- Uses the game's own marker data and inactive-objective icon path.
+- Keeps your selected quest as the tracked quest; the mod does not cycle tracking.
+
+The mod contains three native memory patches in one JSON manifest. It does not
+write to `koa.exe` on disk or edit saves. It does not invent destinations the
+engine cannot resolve. The local map and minimap retain their original behavior.
+There are no settings or larger-region filtering variants in this release.
+
+## Compatibility and limitations
+
+Tested executable SHA-256:
+
+```text
+16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314
+```
+
+Steam, Epic, other executable builds and other framework versions are unverified.
+The JSON uses instruction signatures, not a whole-file hash check. A game update
+or another mod changing the same native code may prevent it from loading or cause
+a conflict. The framework applies the patches separately; if any signature fails,
+remove this mod and restart rather than using a partially applied set.
+
+In-game success was reported for the tester's setup. Quest completion, all
+interiors, all DLC, undiscovered areas and every interaction/save-load case have
+not been exhaustively checked. Earlier native visibility checks remain in place,
+but complete preservation of reveal rules is not claimed. Report specific cases
+with the game build and mod list if markers are missing or unexpected.
+
+## Uninstall
+
+Close the game, delete `mods/all_quest_markers_native.json`, then restart.
+Do not delete the shared `mods` folder or Mod Framework files used by other mods.
+
+## Troubleshooting
+
+If markers do not appear, first check that the JSON is directly inside `mods`,
+not inside an extra archive folder or named `.json.txt`. Restart after installing
+or changing it. Check the framework startup log for
+`Reading mod ...all_quest_markers_native.json` and the following signature/address
+messages. All three patches must load.
+
+When reporting a problem, include the game store/build, framework version, other
+native patches, the affected quest/region, and those startup log lines.
+Do not upload the game executable or private game script exports publicly.
+
+## Development
+
+The release source is `mods/all_quest_markers_native.json`. Build and check its
+package with Python 3 (no extra Python packages):
 
 ```sh
-./tools/setup_lua.sh
-./tools/check.sh
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 python3 tools/package.py
 ```
 
-Setup downloads official Lua 5.1.5 with TLS verification and the SHA-256 published
-on lua.org, then builds it in `/workspace/.aqm-tools`. It does not install system
-packages. Set `AQM_TOOLS_DIR` before setup and checks to choose another cache.
-Tests use simulated normalized quest data and a simulated renderer, never the game.
-Stock Lua 5.1 tests do not establish Havok Script compatibility.
-
-To generate a probe-only autoload manifest **after** observing an exact game-module
-trigger in a working Re-Reckoning example/log:
+To check signatures against your own legally installed executable, without
+modifying it:
 
 ```sh
-python3 tools/package.py --probe-trigger 'EXACT_OBSERVED_TRIGGER' --output /tmp/aqm-triggered
+python3 tools/verify_executable.py /path/to/koa.exe
 ```
 
-Replace the placeholder with evidence; it is not a valid trigger supplied by this
-project. This uses the verified framework JSON shape but does not establish runtime
-compatibility. The manifest loads only the probe. A full mod manifest must wait for
-verified quest/map lifecycle integration.
+The verifier accepts only the exact analyzed SHA-256. Passing it checks the file
+and signatures; it does not establish every aspect of in-game compatibility.
 
-## Documentation
+Historical Lua prototype tests can also run with `./tools/setup_lua.sh` followed by
+`./tools/check.sh`. They test the earlier core/helpers and do not validate the
+native mod in the game. See [native patch details](docs/native-patches.md) and
+[historical research](docs/runtime-findings.md).
 
-- [Research and source evidence](docs/research.md)
-- [Architecture and host adapter contract](docs/architecture.md)
-- [Configuration](docs/configuration.md)
-- [Debugging and evidence collection](docs/debugging.md)
-- [Validation checklist and known limitations](docs/validation.md)
+## Credits and license
 
-## What is needed to complete the mod
-
-Provide the working framework sample's JSON/Lua files and read-only probe logs
-from the target PC build. Locally extracted quest-journal and world-map Lua/UI
-scripts would allow checking signatures, visibility rules, and marker filtering.
-Keep proprietary scripts private; they are for local inspection, not redistribution.
-Actual game execution is required to prove marker placement, interaction, and save
-safety. See the evidence gates in the architecture document.
-
-## Follow-up after the targeted scan
-
-The supplied GOG/v1.4 logs confirm manual probe execution and expose `QUEST`,
-`MAP`, `map_manager`, `map_data`, and `quests_win`. The targeted scan completed
-with 237 symbols and no truncation; native calling signatures remain unknown.
-The VM reports `2.5 r7786`, so stock Lua tests are not engine-version proof.
-
-The optional `trace.lua` records existing game-initiated calls through temporary
-Lua wrappers. It does not create markers or call guessed engine functions. It is
-not automatically loaded by bootstrap or the probe. See [trace instructions](docs/tracing.md).
-
-## Local script inspection
-
-The optional `inspect.lua` helper serializes already-loaded map/journal Lua
-functions to a numbered `AllQuestMarkers-inspection-NNN.txt` in the game working
-directory when file writing is available. With io.open unavailable (as confirmed
-on the user's GOG VM), it prints the same report to the console instead.
-It does not install hooks, call the exported functions, or dump saves.
-This is proprietary game bytecode for private analysis; do not publish the output.
-The package contains only our exporter, never its game-generated outputs.
-See [inspection instructions](docs/inspection.md).
+Mod Framework by [DevCortez](https://github.com/DevCortez/KoaModFramework).
+Thanks to the in-game tester who supplied diagnostic results and confirmed the
+combined patch works. This project's original code and documentation use the
+[MIT license](LICENSE). Game files and third-party framework binaries are not
+included.

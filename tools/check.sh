@@ -14,4 +14,6 @@ done < <(find mods tests -name '*.lua' -print0)
 "$AQM_LUA" tests/run.lua
 "$AQM_LUA" tests/trace.lua
 "$AQM_LUA" tests/inspect.lua
+"$AQM_LUA" tests/quest_reader.lua
+"$AQM_LUA" tests/find_map_code.lua
 python3 -m unittest discover -s tests -p 'test_*.py' -v

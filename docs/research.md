@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Research record
 
 Research performed 14 October 2026 (Europe/Paris). Facts below describe inspected

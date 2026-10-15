@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Configuration
 
 `mods/AllQuestMarkers/config.lua` returns a Lua table. Back it up before replacing

@@ -1,3 +1,5 @@
+> Historical Lua prototype/research documentation. See the [current mod README](../README.md) for installation and supported behavior.
+
 # Debugging and the next concrete experiment
 
 Confirmed validation target: **GOG PC edition with Mod Framework v1.4** (user-provided).
