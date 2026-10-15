@@ -10,8 +10,9 @@ builds, DLC combinations and every quest/visibility case have not been verified.
 
 ## Download
 
-- [Download AllQuestMarkers-1.0.0.zip](https://github.com/Doezer/KOARR-World-map-enhanced/releases/download/v1.0.0/AllQuestMarkers-1.0.0.zip)
-- [Latest release and checksum](https://github.com/Doezer/KOARR-World-map-enhanced/releases/latest)
+- [Download AllQuestMarkers-1.0.0.zip](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/v1.0.0/dist/AllQuestMarkers-1.0.0.zip)
+- [SHA-256 checksum](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/v1.0.0/dist/AllQuestMarkers-1.0.0.zip.sha256)
+- [Latest release](https://github.com/Doezer/KOARR-World-map-enhanced/releases/latest)
 
 Use the release ZIP for installation. The repository also retains historical Lua
 research helpers; they are not required or included in the release ZIP.
