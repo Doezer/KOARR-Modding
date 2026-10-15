@@ -13,4 +13,5 @@ while IFS= read -r -d '' source; do
 done < <(find mods tests -name '*.lua' -print0)
 "$AQM_LUA" tests/run.lua
 "$AQM_LUA" tests/trace.lua
+"$AQM_LUA" tests/inspect.lua
 python3 -m unittest discover -s tests -p 'test_*.py' -v

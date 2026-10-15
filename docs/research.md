@@ -150,3 +150,35 @@ no budget for the later map interaction. `passive-v2` gives every function four
 calls of its own, with the global cap retained. A regression test simulates
 100,000 quest calls before a map call and verifies that map arguments/results
 are still logged. This is a logger correction, not evidence of marker behavior.
+
+## Focused passive trace result
+
+The `passive-v2` log captured 35 CALL/RETURN pairs and stopped with zero cleanup
+conflicts. Observed shapes (arguments are positional, ui64 values remain opaque):
+
+- `QUEST.get_num_active_quests()` returned 304. This cannot be interpreted as
+  304 visible journal quests without checking the journal's filtering logic.
+- `QUEST.get_active_id(index)` used indices 0, 1, 2, 3 and returned ui64 values.
+- `QUEST.get_current_quest()` returned ui64; `QUEST.get_stage(ui64)` returned a
+  number; `QUEST.get_num_stage_subtasks(ui64, stage_number)` returned a number.
+- `QUEST.get_target_indexes()` returned a dense-looking table of ui64 values.
+  The observed lists contained first one, later three entries. Its scope and
+  visibility semantics remain unknown.
+- `QUEST.get_target_types(ui64)` returned a table with numeric entry 3. The enum
+  meaning is unverified.
+- `MAP.set_map_window_region(window_userdata, region_ui64)` returned nothing.
+- `MAP.add_object(object_ui64, true, true)` returned nothing. Boolean meanings
+  remain unknown.
+- `MAP.add_object_icon(window_userdata, object_ui64, "diamond", true)` returned
+  nothing. The observed object differs from the logged quest-target IDs; this
+  is NOT evidence of creating a quest marker. No handle is returned, so the
+  generic test renderer contract cannot be mapped to this call by assumption.
+- `MAP.world_to_window_coords(window_userdata, x_number, y_number, false)`
+  returned two numbers. Coordinate axes, flags, clipping and lifetime are unknown.
+
+Native query and UI signatures now have runtime examples. Connecting targets to
+map icons still requires examining the game Lua code that calls these APIs. The
+optional local inspection exporter uses standard `string.dump` without executing
+the exported functions, preserves prior output files, and writes a private hex
+bundle. Compatibility of that standard dumper with the target VM remains to be
+tested; Havok bytecode must not be treated as stock Lua executable bytecode.

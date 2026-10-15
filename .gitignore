@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Private local inspection exports may contain proprietary compiled game scripts.
+AllQuestMarkers-inspection-*.txt

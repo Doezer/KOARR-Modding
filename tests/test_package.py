@@ -23,7 +23,7 @@ class PackageTests(unittest.TestCase):
                 self.assertIn('mods/AllQuestMarkers/bootstrap.lua', names)
                 self.assertIn('mods/AllQuestMarkers/probe.lua', names)
                 self.assertIn('docs/research.md', names)
-                self.assertEqual(len([n for n in names if n.endswith('.lua')]), 9)
+                self.assertEqual(len([n for n in names if n.endswith('.lua')]), 10)
                 for name in names:
                     self.assertFalse(name.startswith('/') or '..' in Path(name).parts)
                     self.assertTrue(name.endswith(('.lua', '.md', '.txt')) or name == 'LICENSE')

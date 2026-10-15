@@ -15,7 +15,7 @@ and UI lifetime rules still need runtime evidence. We do not guess them.
 
 ## Download and install the probe
 
-Use `dist/AllQuestMarkers-probe-0.1.2.zip`. Its `mods/AllQuestMarkers/` directory
+Use `dist/AllQuestMarkers-probe-0.1.3.zip`. Its `mods/AllQuestMarkers/` directory
 contains only this project's Lua source; no game assets or framework DLLs.
 
 1. Obtain [Mod Framework v1.4](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9)
@@ -114,3 +114,12 @@ The VM reports `2.5 r7786`, so stock Lua tests are not engine-version proof.
 The optional `trace.lua` records existing game-initiated calls through temporary
 Lua wrappers. It does not create markers or call guessed engine functions. It is
 not automatically loaded by bootstrap or the probe. See [trace instructions](docs/tracing.md).
+
+## Local script inspection
+
+The optional `inspect.lua` helper serializes already-loaded map/journal Lua
+functions to a numbered `AllQuestMarkers-inspection-NNN.txt` in the game working
+directory. It does not install hooks, call the exported functions, or dump saves.
+This is proprietary game bytecode for private analysis; do not publish the output.
+The package contains only our exporter, never its game-generated outputs.
+See [inspection instructions](docs/inspection.md).
