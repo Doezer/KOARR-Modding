@@ -24,7 +24,7 @@ class PackageTests(unittest.TestCase):
     def test_release_contains_only_installable_manifest_and_public_documentation(self):
         with tempfile.TemporaryDirectory() as tmp:
             archive = package.build(tmp)
-            self.assertEqual(archive.name, 'AllQuestMarkers-1.0.0.zip')
+            self.assertEqual(archive.name, 'AllQuestMarkers-1.0.1.zip')
             with zipfile.ZipFile(archive) as z:
                 self.assertEqual(set(z.namelist()), {
                     'mods/all_quest_markers_native.json', 'README.md', 'CHANGELOG.md', 'LICENSE'})
