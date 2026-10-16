@@ -31,7 +31,9 @@ stack and SSE preservation while simulating a clobbering helper call.
 Offline tests cover strict preference parsing/roundtrip, bounded storage, failed
 parses retaining prior state, shared-marker policy, journal filtering/restoration,
 selection, collapsed rows, multiple/nil returns, render errors, failed writes,
-character changes, duplicate bootstrap and package isolation. They do not execute
+character changes, duplicate bootstrap, reminder hints in both views, custom key
+labels, reminder restoration, shared UI setter cleanup after errors and package
+isolation. They do not execute
 the proprietary game or establish in-game compatibility.
 
 ## Integration
@@ -66,3 +68,12 @@ raises an error. Quest progression, tracking and save data are not written.
 Pinned framework source consulted:
 [DevCortez/KoaModFramework at 66bd893](https://github.com/DevCortez/KoaModFramework/tree/66bd89343fa516d5dfec0f7bed3961edc15ab33f).
 The GOG executable and private bytecode exports are not in this repository.
+
+The journal key hint reuses the existing ledger reminder label. While the original
+journal SHOW handler calls `ledger_win.set_reminder`, the adapter briefly observes
+the supported WINDOW label setters to identify the actual label handle. All shared
+setters are restored even if the reminder throws. It then writes the configured
+keys and current list actions, refreshing on journal updates. Closing the journal
+or detaching restores the original reminder through its original setter/arguments;
+another ledger page taking ownership drops the cached label. No guessed UI hashes
+or duplicated UI templates are introduced. Actual placement requires game testing.

@@ -29,6 +29,61 @@ local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, versi
 G.QuestHider = S
 local function pack(...) return {n=select("#", ...), ...} end
 local function unpacked(t) return unpack(t, 1, t.n) end
+-- Use the journal's existing reminder label, discovered from its own setter call.
+-- No UI resource IDs or new window layouts are needed.
+local reminder, reminder_scope
+local function key_name(key)
+    if key >= 112 and key <= 135 then return "F" .. tostring(key - 111) end
+    if (key >= 48 and key <= 57) or (key >= 65 and key <= 90) then return string.char(key) end
+    local names = {[8]="Backspace",[9]="Tab",[13]="Enter",[16]="Shift",[17]="Ctrl",
+        [18]="Alt",[19]="Pause",[20]="Caps Lock",[27]="Esc",[32]="Space",
+        [33]="Page Up",[34]="Page Down",[35]="End",[36]="Home",[37]="Left",
+        [38]="Up",[39]="Right",[40]="Down",[45]="Insert",[46]="Delete"}
+    return names[key] or ("VK " .. tostring(key))
+end
+local function hint_text()
+    return key_name(config.toggle_key) .. (S.hidden_view and ": Restore" or ": Hide")
+        .. " | " .. key_name(config.hidden_list_key)
+        .. (S.hidden_view and ": Show Normal" or ": Show Hidden")
+end
+local function update_hint()
+    if S.enabled and reminder then reminder.write(reminder.label, hint_text()) end
+end
+local function restore_hint()
+    if reminder then
+        local old=reminder;reminder=nil
+        old.setter(unpacked(old.args))
+    end
+end
+local function capture_reminder(original, ...)
+    local W=rawget(G,"WINDOW")
+    if type(W)~="table" or type(W.set_label_text)~="function" then return original(...) end
+    local changed={}
+    local write=W.set_label_text
+    local captured
+    for _,name in ipairs({"set_label_text", "set_label_text_formatted",
+        "set_label_text_no_loc_fix_up", "set_label_text_with_built_string"}) do
+        local setter=W[name]
+        if type(setter)=="function" then
+            local replacement=function(...)
+                local args=pack(...)
+                local result=pack(setter(...))
+                if args[1] then captured={label=args[1],write=write,setter=setter,args=args} end
+                return unpacked(result)
+            end
+            changed[#changed+1]={name=name,setter=setter,replacement=replacement}
+            W[name]=replacement
+        end
+    end
+    local result=pack(pcall(original,...))
+    for _,change in ipairs(changed) do
+        if W[change.name]==change.replacement then W[change.name]=change.setter end
+    end
+    if not result[1] then error(result[2],0) end
+    if captured then reminder=captured;update_hint()
+    else log("Journal reminder label unavailable; key hints remain in the log.") end
+    return unpack(result,2,result.n)
+end
 local function quest_key(entry)
     if type(entry) ~= "table" or type(entry.collapsed) == "boolean" or entry.id == nil then return nil end
     local api = rawget(G, "QUEST")
@@ -92,6 +147,7 @@ local function refresh(qw)
     if type(qw.rebuild_quest_list) == "function" then qw.rebuild_quest_list() end
     if type(qw.update_stage_information) == "function" then qw.update_stage_information() end
     if type(qw.update_information_window) == "function" then qw.update_information_window() end
+    update_hint()
 end
 function S.toggle_selected()
     local qw=rawget(G,"quests_win")
@@ -122,6 +178,17 @@ local function attach_journal(qw)
     -- Every integration point below occurs in the privately supplied journal export.
     if type(qw) ~= "table" or type(qw.rebuild_quest_list) ~= "function"
         or type(qw.get_selected_quest) ~= "function" then return end
+    wrap(rawget(G,"ledger_win"),"set_reminder",function(original) return function(...)
+        if S.enabled and reminder_scope then return capture_reminder(original,...) end
+        -- A different ledger page now owns the shared reminder label.
+        reminder=nil
+        return original(...)
+    end end)
+    wrap(qw,"update_rose",function(original) return function(...)
+        local result=pack(original(...))
+        update_hint()
+        return unpacked(result)
+    end end)
     wrap(qw,"rebuild_quest_list",function(original) return function(...)
         if not S.enabled then return original(...) end
         local saved={}
@@ -165,9 +232,16 @@ local function attach_journal(qw)
             N.poll(tostring(config.toggle_key));N.poll(tostring(config.hidden_list_key))
             log("F6: hide/restore selected quest. F7: normal/hidden list.")
         end
-        local result=pack(original(event,...))
-        if event=="START_CLOSE" then S.hidden_view=false end
-        return unpacked(result)
+        if event=="START_CLOSE" then restore_hint();S.hidden_view=false end
+        local previous_scope=reminder_scope
+        reminder_scope=S.enabled and event=="SHOW"
+        local result=pack(pcall(original,event,...))
+        reminder_scope=previous_scope
+        if not result[1] then
+            if event=="SHOW" then restore_hint() end
+            error(result[2],0)
+        end
+        return unpack(result,2,result.n)
     end end)
     wrap(qw,"on_update_event",function(original) return function(dt,window,...)
         local result=pack(original(dt,window,...))
@@ -196,6 +270,7 @@ function S.attach()
     end end)
 end
 function S.detach()
+    restore_hint()
     S.enabled=false;S.profile_ready=false;N.suspend()
     for i=#S.hooks,1,-1 do
         local h=S.hooks[i]

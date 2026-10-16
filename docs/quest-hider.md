@@ -41,6 +41,12 @@ Open the quest journal and select an ongoing quest row.
 - **F6:** hide the selected quest, or restore it from the hidden list.
 - **F7:** switch between the normal journal and hidden quests.
 
+The journal reminder area shows **F6: Hide | F7: Show Hidden** in the normal
+list and **F6: Restore | F7: Show Normal** in the hidden list. It follows the
+configured keys. The original reminder is restored when leaving the journal.
+Hint placement still needs an in-game check; if the reminder label cannot be
+identified, the mod logs a message and keeps its existing keyboard controls.
+
 Category headers remain available; expand a category to view its quests. Hidden
 rows have a `[Hidden]` prefix. Closing and reopening the journal returns to the
 normal list. Empty categories can remain visible.
