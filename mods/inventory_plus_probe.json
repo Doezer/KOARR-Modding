@@ -1,0 +1,9 @@
+{
+  "scripts": [
+    {"trigger": "menu_tools", "path": ".\\mods\\InventoryPlusProbe\\probe.lua"},
+    {"trigger": "name_win", "path": ".\\mods\\InventoryPlusProbe\\probe.lua"},
+    {"trigger": "player_inventory_manager", "path": ".\\mods\\InventoryPlusProbe\\probe.lua"},
+    {"trigger": "ledger_win", "path": ".\\mods\\InventoryPlusProbe\\probe.lua"},
+    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlusProbe\\probe.lua"}
+  ]
+}

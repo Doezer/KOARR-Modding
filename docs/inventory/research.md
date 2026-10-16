@@ -120,7 +120,9 @@ included in this repository.
 Names alone are **not a callable API contract**. No new native address or guessed
 function signature should be invoked to discover its parameters. Inspect the
 original module's uses first, then validate a small read-only snapshot in-game.
-Inventory module names and framework trigger strings have not yet been confirmed.
+At the time of this research, inventory module names and framework trigger
+strings had not been confirmed. The subsequent [technical spike](spike.md)
+identifies observed names from the earlier user-provided runtime log.
 
 A UI change must preserve an item's native handle and original context through
 filtering and sorting. A displayed row number cannot be used as the inventory
