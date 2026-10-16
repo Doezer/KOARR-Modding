@@ -1,3 +1,19 @@
+# Re-Reckoning utility mods
+
+A collection of independently installable mods. Pick the ZIP for the mod you want.
+
+| Mod | Status | Download / details |
+| --- | --- | --- |
+| All Quest Markers on World Map | Confirmed working · 1.0.1 | [Nexus Mods](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97) · details below |
+| Quest Hider | Experimental · 0.1.0 preview · awaiting in-game test | [Preview ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.0-preview.zip) · [controls and installation](docs/quest-hider.md) |
+
+Quest Hider adds **F6** to hide/restore a journal quest and **F7** to switch to the
+hidden list, with persistent preferences and objective map filtering. It has its
+own files and does not require All Quest Markers. See its documentation for preview
+limits and the first in-game test.
+
+---
+
 ![All Quest Markers — On the World Map](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/docs/images/header.png)
 
 # All Quest Markers on World Map
