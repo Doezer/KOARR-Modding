@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "store.h"
+#include "vm_bridge.h"
 #define VA(address) (base + (uintptr_t)(address) - 0x00400000u)
 #define QH_CACHE_MAX 4096
 #define QH_FILE_MAX 32768
@@ -23,9 +24,8 @@ static int cache_dirty=1;
 static unsigned char key_down[256];
 void *qh_render_continue, *qh_render_skip;
 void qh_render_hook(void);
-typedef int (__cdecl *lua_function)(void *state);
-struct lua_reg { const char *name; lua_function function; };
 static int (__cdecl *lua_gettop)(void*);
+static void (__cdecl *lua_pop_values)(void*,int);
 static const char *(__cdecl *lua_tostring)(void*,int);
 static void (__cdecl *lua_register)(void*,const char*,const struct lua_reg*);
 static void *(__stdcall *previous_new_state)(void*);
@@ -36,7 +36,8 @@ static void log_line(const char *format,...) {
     if(n<0)return;
     text[sizeof(text)-3]=0;n=(int)strlen(text);text[n++]='\n';
     WriteFile(GetStdHandle(STD_OUTPUT_HANDLE),text,(DWORD)n,&written,NULL);
-    text[n]=0;OutputDebugStringA(text);
+    /* One synchronous output path: do not also call a debugger/overlay sink. */
+    text[n]=0;
 }
 static int read_memory(uintptr_t address,void *out,size_t size) {
     SIZE_T got=0;
@@ -165,6 +166,11 @@ static const char *arg(void *state,int index,int count) {
     if(!lua_gettop||lua_gettop(state)!=count)return NULL;
     return lua_tostring(state,index);
 }
+static int api_self_test(void *state) {
+    const char *s=arg(state,1,1);
+    /* Exercise the same C-to-Lua return convention, without patching or game inspection. */
+    return s&&!strcmp(s,"QuestHider bridge 0.1.2")?1:0;
+}
 static int api_initialize(void *state) {
     static const unsigned char expected[]={0xf6,0x45,0x04,0x01,0x0f,0x85,0x0f,0x06,0x00,0x00};
     unsigned char patch[sizeof(expected)];int32_t delta;
@@ -199,24 +205,30 @@ static int api_poll(void *state) {
     key_down[code]=(unsigned char)pressed;return 0;
 }
 static const struct lua_reg functions[]={
-    {"initialize",api_initialize},{"profile",api_profile},{"suspend",api_suspend},
+    {"self_test",api_self_test},{"initialize",api_initialize},{"profile",api_profile},{"suspend",api_suspend},
     {"is_hidden",api_has},{"set_hidden",api_set},{"poll",api_poll},{NULL,NULL}
 };
 static int resolve_api(void) {
     IMAGE_DOS_HEADER *dos;IMAGE_NT_HEADERS32 *pe;
     static const unsigned char top[]={0x8b,0x4c,0x24,0x04,0x8b,0x41,0x24,0x2b,0x41,0x28,0xc1,0xf8,0x03,0xc3};
+    static const unsigned char pop[]={0x8b,0x4c,0x24,0x08,0x8b,0x44,0x24,0x04,0xf7,0xd9,0x03,0xc9,0x03,0xc9,0x03,0xc9,0x01,0x48,0x24,0xc3};
     static const unsigned char reg[]={0x8b,0x44,0x24,0x0c,0x8b,0x4c,0x24,0x08,0x56,0x8b,0x74,0x24,0x08,0x6a,0x00,0x6a,0x00,0x50,0x51,0xe8};
     static const unsigned char string[]={0x8b,0x4c,0x24,0x08,0x81,0xf9,0xf0,0xd8,0xff,0xff,0x7e,0x35};
     base=(uintptr_t)GetModuleHandleA(NULL);dos=(IMAGE_DOS_HEADER*)base;
     if(dos->e_magic!=IMAGE_DOS_SIGNATURE)return 0;pe=(IMAGE_NT_HEADERS32*)(base+dos->e_lfanew);
     if(pe->Signature!=IMAGE_NT_SIGNATURE||pe->FileHeader.Machine!=IMAGE_FILE_MACHINE_I386||pe->FileHeader.TimeDateStamp!=0x63f74827||pe->OptionalHeader.SizeOfImage!=0x0173d000)return 0;
-    if(memcmp((void*)VA(0x00a9f980),top,sizeof(top))||memcmp((void*)VA(0x010adca0),reg,sizeof(reg))||memcmp((void*)VA(0x00a9f8b0),string,sizeof(string)))return 0;
-    lua_gettop=(void*)VA(0x00a9f980);lua_tostring=(void*)VA(0x00a9f8b0);lua_register=(void*)VA(0x010adca0);
+    if(memcmp((void*)VA(0x00a9f9a0),pop,sizeof(pop))||memcmp((void*)VA(0x00a9f980),top,sizeof(top))||memcmp((void*)VA(0x010adca0),reg,sizeof(reg))||memcmp((void*)VA(0x00a9f8b0),string,sizeof(string)))return 0;
+    lua_pop_values=(void*)VA(0x00a9f9a0);lua_gettop=(void*)VA(0x00a9f980);lua_tostring=(void*)VA(0x00a9f8b0);lua_register=(void*)VA(0x010adca0);
     return 1;
+}
+static void register_library(void *state) {
+    if(!qh_register_balanced(state,"QuestHiderNative",functions,lua_gettop,lua_register,lua_pop_values)) {
+        supported=0;log_line("Lua registration stack imbalance; helper disabled");
+    }
 }
 static void *__stdcall wrapped_new_state(void *state) {
     void *result=previous_new_state(state);
-    if(result)lua_register(result,"QuestHiderNative",functions);return result;
+    if(result&&supported)register_library(result);return result;
 }
 static void hook_framework_state(void) {
     static const unsigned char prefix[]={0x8b,0x47,0x08,0xff,0x88,0xdc,0x02,0x00,0x00,0x8b,0xc7,0x5f,0x5e,0x5d,0x5b,0x59};
@@ -230,7 +242,7 @@ static void hook_framework_state(void) {
     if(patch_memory(call+1,&new_delta,4))log_line("Chained framework Lua registration hook");
 }
 __declspec(dllexport) int __cdecl luaopen_QuestHiderNative(void *state) {
-    if(supported)lua_register(state,"QuestHiderNative",functions);return 0;
+    if(supported)register_library(state);return 0;
 }
 BOOL WINAPI DllMain(HINSTANCE instance,DWORD reason,LPVOID reserved) {
     (void)reserved;

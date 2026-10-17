@@ -15,6 +15,14 @@
     {
       "trigger": "minimap_win",
       "path": ".\\mods\\QuestHider\\bootstrap.lua"
+    },
+    {
+      "trigger": "ledger_win",
+      "path": ".\\mods\\QuestHider\\config.lua"
+    },
+    {
+      "trigger": "ledger_win",
+      "path": ".\\mods\\QuestHider\\bootstrap.lua"
     }
   ]
 }

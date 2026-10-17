@@ -1,5 +1,5 @@
 local stored,profile,fail,pressed={},'Hero',false,{}
-QuestHiderNative={initialize=function()return true end,profile=function()return true end,
+QuestHiderNative={self_test=function(s)return s end,initialize=function()return true end,profile=function()return true end,
  suspend=function()end,is_hidden=function(k)return stored[profile..k] end,
  set_hidden=function(k,a)if fail then return nil end;stored[profile..k]=a=='hide' or nil;return true end,
  poll=function(k)local v=pressed[k];pressed[k]=nil;return v end}

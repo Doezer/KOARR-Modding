@@ -1,22 +1,26 @@
-# Quest Hider — 0.1.1 preview
+# Quest Hider — 0.1.2 preview
 
 Hide ongoing quests from the journal and filter their objective icons from maps.
 Restore them through a separate hidden-quest view. Quest progress and your tracked
 quest selection are preserved.
 
 **Startup hang reported in 0.1.0. Keep Quest Hider disabled during inventory
-probe testing.** Version 0.1.1 contains a startup mitigation with offline tests;
+probe testing.** Version 0.1.2 contains a native stack fix and startup mitigation with offline tests;
 it is not yet confirmed to resolve the failure in-game.
 
-The failed log ends after the native renderer-install message during the
-`minimap_win` trigger. It does not establish whether the native callback return,
-the subsequent game `loadfile` operation or another interaction caused the hang.
-This revision loads config through ordered framework script entries, removes
-nested `loadfile`/`loadlib` calls, guards Lua bootstrap errors and defers native
-initialization until the journal's SHOW event. Native DLL registration still
-happens when the framework loads DLLs. A native hang cannot be caught by Lua
-`pcall`; moving the call out of startup is a mitigation, not proof that the
-native path is correct.
+The original failed log ends after the native renderer-install message during
+`minimap_win`. It does not prove which following operation blocked. The current
+candidate fixes a verified native-library registration stack leak: registering
+`QuestHiderNative` pushes a table, and both native registration paths now restore
+the original Lua stack height. Native logging uses one console output path.
+
+Config is loaded by the framework, Lua bootstrap errors are guarded, and native
+renderer initialization waits until the quest journal opens. A small native
+bridge self-test runs first and logs whether a value returns successfully to Lua,
+without reading game objects or installing a patch. This separates a bridge
+failure from renderer initialization in the next log. Native DLL registration
+still happens when the framework loads DLLs. A native hang cannot be caught by
+Lua `pcall`; the startup hang is **not yet confirmed fixed in-game**.
 
 To disable the mod, close the game and move **both** `mods/quest_hider.json` and
 `mods/quest_hider_native.dll` out of `mods`. Removing the JSON alone does not stop
@@ -26,8 +30,8 @@ the framework loading the DLL.
 an independent mod in the same repository as All Quest Markers. It does not require
 All Quest Markers, and its renderer hook occupies a different code range.
 
-[Download preview ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.1-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.1-preview.zip.sha256)
+[Download preview ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.2-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.2-preview.zip.sha256)
 
 ## Requirements and installation
 
@@ -40,8 +44,8 @@ All Quest Markers, and its renderer hook occupies a different code range.
 16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314
 ```
 
-When testing the mitigation separately, replace the JSON, `config.lua` and
-`bootstrap.lua` together. Replacing only the Lua bootstrap leaves the old config
+When testing the mitigation separately, replace the DLL, JSON, `config.lua` and
+`bootstrap.lua` together. The new Lua adapter requires the matching 0.1.2 DLL. Replacing only the Lua bootstrap leaves the old config
 loading order, and the adapter will disable itself. Keep your profile files.
 
 Close the game. Extract the ZIP into the folder containing `koa.exe`, merging
@@ -56,6 +60,29 @@ mods/
     ├── bootstrap.lua
     └── config.lua
 ```
+
+## Focused startup test for 0.1.2
+
+1. Close the game and temporarily move `mods/inventory_plus_probe.json` out of
+   `mods` to keep this diagnostic run focused on Quest Hider.
+2. Extract the complete 0.1.2 ZIP beside `koa.exe`, replacing all Quest Hider mod
+   files. Keep `mods/QuestHider/profiles/` if it exists. If you customized the
+   config, carry the settings into the new config format.
+3. Start the game. Check that the main menu appears, then load your save and open
+   the quest journal. No hiding/restoring action is needed for this first check.
+4. Send the full framework log, including whether the stop happened before the
+   menu or when opening the journal.
+
+A successful journal initialization includes:
+
+```text
+[QuestHider] Bridge self-test: returned expected value.
+[QuestHider] Native initialize: returned success.
+```
+
+These are diagnostic milestones, not a substitute for marker/journal validation.
+If startup still blocks, close the game and disable both the Quest Hider JSON and
+DLL as described above. Inventory work can continue with Quest Hider disabled.
 
 ## Controls
 

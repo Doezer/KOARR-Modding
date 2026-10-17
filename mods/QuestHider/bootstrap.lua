@@ -14,7 +14,7 @@ if type(N) ~= "table" then
     log("Native helper unavailable; no journal hooks installed.")
     return false
 end
-for _,name in ipairs({"initialize","profile","suspend","is_hidden","set_hidden","poll"}) do
+for _,name in ipairs({"self_test","initialize","profile","suspend","is_hidden","set_hidden","poll"}) do
     if type(N[name]) ~= "function" then
         log("Native API incomplete (" .. name .. "); no journal hooks installed.")
         return false
@@ -25,7 +25,7 @@ if type(config) ~= "table" or not valid_key(config.toggle_key) or not valid_key(
     or config.toggle_key == config.hidden_list_key or type(config.profile) ~= "string" then
     log("Invalid config; no journal hooks installed."); return false
 end
-local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.1-preview", native_ready=false, native_attempted=false}
+local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.2-preview", native_ready=false, native_attempted=false}
 G.QuestHider = S
 local function pack(...) return {n=select("#", ...), ...} end
 local function unpacked(t) return unpack(t, 1, t.n) end
@@ -112,6 +112,13 @@ function S.ensure_native()
     if S.native_ready then return true end
     if S.native_attempted then return false end
     S.native_attempted=true
+    log("Bridge self-test: enter (journal opened).")
+    local bridge_ok,reply=pcall(N.self_test,"QuestHider bridge 0.1.2")
+    if not bridge_ok or reply~="QuestHider bridge 0.1.2" then
+        log("Bridge self-test failed; filtering disabled. Check that the DLL and Lua files are both 0.1.2.")
+        return false
+    end
+    log("Bridge self-test: returned expected value.")
     log("Native initialize: enter (journal opened).")
     local ok,result=pcall(N.initialize,"QuestHider")
     log("Native initialize: returned " .. (ok and (result and "success" or "disabled") or "Lua error") .. ".")

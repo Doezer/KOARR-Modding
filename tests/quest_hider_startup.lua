@@ -1,7 +1,8 @@
 -- Startup must not call the game loader, package loader or native helper functions.
 local initialize,profile,poll,suspend,shows=0,0,0,0,0
 local outcome='success'
-QuestHiderNative={
+local bridge_calls=0
+QuestHiderNative={self_test=function(s)bridge_calls=bridge_calls+1;return s end,
  initialize=function()
   initialize=initialize+1
   if outcome=='throw' then error('initialization exception') end
@@ -37,8 +38,14 @@ assert(type(S)=='table' and not S.native_ready)
 for i=1,100 do assert(minimap_win.on_update_event()=='minimap')end
 assert(MAP.set_map_window_region()=='map')
 assert(not S.toggle_selected() and not S.toggle_view())
+-- ledger_win can acquire its functions after quests_win has loaded.
+local reminder=function()return 'original reminder' end
+ledger_win={set_reminder=reminder}
+assert(dofile('mods/QuestHider/bootstrap.lua')==S)
+assert(ledger_win.set_reminder~=reminder)
+assert(ledger_win.set_reminder()=='original reminder')
 quests_win.on_window_event('END_INIT')
-assert(initialize==0 and profile==0 and poll==0 and suspend==0)
+assert(initialize==0 and profile==0 and poll==0 and suspend==0 and bridge_calls==0)
 local a,b=quests_win.on_window_event('SHOW')
 assert(a==nil and b=='original' and S.native_ready and initialize==1 and shows==1)
 quests_win.on_window_event('SHOW');assert(initialize==1 and shows==2)
@@ -50,6 +57,17 @@ for _,mode in ipairs({'disabled','throw'})do
  local c,d=quests_win.on_window_event('SHOW')
  assert(c==nil and d=='original' and not S.native_ready and initialize==before+1)
  quests_win.on_window_event('SHOW');assert(initialize==before+1)
+ S.detach()
+end
+for _,mode in ipairs({'wrong-version','missing-result','error'})do
+ QuestHiderNative.self_test=function()
+  if mode=='error' then error('bridge failure')end
+  return mode=='wrong-version' and 'old bridge' or nil
+ end
+ S=dofile('mods/QuestHider/bootstrap.lua')
+ local before=initialize
+ local c,d=quests_win.on_window_event('SHOW')
+ assert(c==nil and d=='original' and not S.native_ready and initialize==before)
  S.detach()
 end
 print('Quest Hider startup: no nested loaders/native startup calls; deferred failures preserve journal')

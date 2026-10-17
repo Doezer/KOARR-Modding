@@ -20,6 +20,14 @@ class QuestHiderTests(unittest.TestCase):
                             'src/quest_hider/store.c', '-o', binary], cwd=ROOT, check=True)
             subprocess.run([binary], check=True)
 
+    def test_native_library_registration_balances_the_lua_stack(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = str(Path(folder) / 'bridge-test')
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Wextra', '-Werror',
+                            '-Isrc/quest_hider', 'tests/quest_hider_vm_bridge.c',
+                            '-o', binary], cwd=ROOT, check=True)
+            subprocess.run([binary], check=True)
+
     def test_journal_adapter(self):
         lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
         self.assertIsNotNone(lua, 'Set QH_LUA to a Lua 5.1 interpreter')
@@ -44,7 +52,7 @@ class QuestHiderTests(unittest.TestCase):
                 self.assertEqual(z.read('mods/quest_hider_native.dll')[:2], b'MZ')
                 import json
                 scripts = json.loads(z.read('mods/quest_hider.json'))['scripts']
-                for trigger in ('quests_win', 'minimap_win'):
+                for trigger in ('quests_win', 'minimap_win', 'ledger_win'):
                     names = [entry['path'].replace('\\', '/').split('/')[-1]
                              for entry in scripts if entry['trigger'] == trigger]
                     self.assertEqual(names, ['config.lua', 'bootstrap.lua'])

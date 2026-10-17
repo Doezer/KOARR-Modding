@@ -41,8 +41,10 @@ the proprietary game or establish in-game compatibility.
 The framework loads `mods/quest_hider_native.dll`. The helper chains the existing
 framework Lua-state registration hook. The Lua adapter requires that registered
 table; it no longer calls `package.loadlib` during startup.
-Both paths register `QuestHiderNative`, then the `quests_win` and `minimap_win`
-script triggers attach the original Lua adapter. Original game Lua files are
+The state hook registers `QuestHiderNative`; the exported Lua loader shares the
+same balanced registration helper. The `quests_win`, `minimap_win` and `ledger_win`
+script triggers attach the original Lua adapter. The ledger trigger permits
+late-loaded reminder helpers to attach after the journal module has loaded. Original game Lua files are
 never replaced or distributed.
 
 Native initialization is deferred until the quest journal SHOW event. Config
@@ -85,3 +87,42 @@ keys and current list actions, refreshing on journal updates. Closing the journa
 or detaching restores the original reminder through its original setter/arguments;
 another ledger page taking ownership drops the cached label. No guessed UI hashes
 or duplicated UI templates are introduced. Actual placement requires game testing.
+
+## Native bridge investigation — 0.1.2
+
+The game implementation confirms that named `luaL_register` leaves the library
+table on the Lua value stack. The old state hook left that extra value in place.
+`vm_bridge.h` now measures and restores stack height around registration, shared
+by the state hook and exported Lua loader. A native C regression performs 200
+registrations without growing the stack or changing pre-existing values.
+
+The pop binding at preferred VA 0x00A9F9A0 is fingerprint-checked before use.
+With `pefile` and `unicorn` installed, the following optional check uses only a
+local, exact-hash executable and reads/emulates its small stack API routines:
+
+```sh
+python tools/verify_quest_hider_vm.py /private/path/to/koa.exe
+```
+
+Eight emulated cases cover stack pop/count at the preferred image base and the
+0x00150000 base observed in the user's log. The same check exercises the native
+`assert` success path: it returns an existing argument without appending a new
+value. That establishes that the bridge's existing-argument result convention
+is supported by this VM; it is not being replaced on speculation. No executable
+or extracted game code is included in the check or distributed with the mod.
+
+The game's `loadfile` and the framework file loader call the same underlying
+file loader. The frozen log alone therefore does not justify blaming nested
+`loadfile`. Removing that dependency and deferring initialization remain useful
+startup mitigations, not a proven root-cause diagnosis.
+
+A `self_test` callback now exercises the native-to-Lua result boundary before any
+renderer initialization. Lua checks its exact versioned return value. A missing,
+wrong or failed result disables filtering, preserves the original journal call,
+and logs the failure. Native logs write only to the console handle; the redundant
+`OutputDebugString` sink was removed so a debugger/overlay output path is not
+part of a native API return. This is not a claim that that sink caused the hang.
+
+The candidate still needs the focused startup/journal test on the user's game.
+Passing the C, Lua and CPU-emulation checks cannot establish that the original
+startup hang has been resolved.

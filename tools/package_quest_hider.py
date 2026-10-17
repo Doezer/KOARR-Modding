@@ -6,7 +6,7 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.1-preview'
+VERSION = '0.1.2-preview'
 PAYLOAD = {
     'mods/quest_hider_native.dll': 'build/quest_hider_native.dll',
     'mods/quest_hider.json': 'mods/quest_hider.json',
