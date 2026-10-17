@@ -4,16 +4,21 @@ Hide ongoing quests from the journal and filter their objective icons from maps.
 Restore them through a separate hidden-quest view. Quest progress and your tracked
 quest selection are preserved.
 
-**Experimental: startup and journal opening now work in the user's test, and F7
-switches between lists. F6 reaches the hide action but the native helper rejects
-the preference update. Hiding/restoring, persistence and map filtering are not yet
-validated.**
+**Experimental: startup and journal opening work in the user's test, and F7
+switches between lists. The corrected 0.1.3 candidate fixes the quest-key text
+conversion used by F6. Hiding/restoring, persistence and map filtering still need
+an in-game check.**
 
-Version 0.1.3 is a diagnostic candidate for that failure. It reports the failing
-operation, Windows error code and preference path through the framework's Lua
-log, including failures before file writing. This distinguishes invalid input
-from a filesystem failure. It does not claim to fix the save failure or change
-where preferences are stored.
+The diagnostic log identified `key=0; Invalid quest key (Win32 0)`. A positive
+integer quest key had passed Lua validation, but `string.format("%.0f", key)`
+turned it into the text `"0"` in the game's runtime. The corrected Lua adapter
+uses `tostring(key)` to preserve the integer. The native helper correctly refused
+the zero key before attempting any file write; that log does not show a folder
+permissions failure.
+
+The existing 0.1.3 native diagnostics remain available for any subsequent failure:
+they report the failing operation, Windows code and preference path through the
+framework log. Preference location and DLL are unchanged by this correction.
 
 The candidate retains the earlier native registration stack fix and the Lua
 integer checks that work without `math.floor`. Native renderer initialization
@@ -42,9 +47,10 @@ All Quest Markers, and its renderer hook occupies a different code range.
 16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314
 ```
 
-For 0.1.3, replace **both** `mods/quest_hider_native.dll` and
-`mods/QuestHider/bootstrap.lua`. Their bridge versions must match. The JSON and
-config are unchanged from 0.1.2; keep your custom config and profile files.
+If you already installed the complete 0.1.3 diagnostic candidate, replace only
+`mods/QuestHider/bootstrap.lua` for this key-conversion correction. When upgrading
+from 0.1.2 or earlier, replace both the DLL and bootstrap so their bridge versions
+match. The JSON and config are unchanged; keep your custom config and profiles.
 
 Close the game. Extract the ZIP into the folder containing `koa.exe`, merging
 `mods`, then restart. No console command is needed. Native filtering remains inactive until you first
@@ -61,11 +67,12 @@ mods/
 
 ## Focused preference-save test for 0.1.3
 
-1. Close the game. Extract the new DLL and `bootstrap.lua` from the ZIP, replacing
-   their installed copies. Keep your config and `profiles/` directory.
+1. Close the game. Replace `bootstrap.lua` with the corrected file. If your DLL
+   predates 0.1.3, replace that from the ZIP too. Keep your config and profiles.
 2. Load your save, open the quest journal, select an ongoing quest row and press F6.
-3. Send the framework log. On failure, the `Could not save preference` line now
-   includes the quest key, action, failing operation, Windows code and file path.
+3. Check that the row disappears, then press F7 and restore it with F6. On
+   failure, send the framework log; the error includes the key, action, failing
+   operation, Windows code and file path.
 
 A reported Windows code of zero means a validation/internal failure, rather than
 an error returned by Windows. The original preference state remains unchanged on

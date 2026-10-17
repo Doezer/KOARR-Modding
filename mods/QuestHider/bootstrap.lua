@@ -92,7 +92,9 @@ local function quest_key(entry)
     if type(api) ~= "table" or type(api.get_quest_key_as_int) ~= "function" then return nil end
     local key = api.get_quest_key_as_int(entry.id)
     if type(key) ~= "number" or key < 1 or key > 268435455 or key % 1 ~= 0 then return nil end
-    return string.format("%.0f", key)
+    -- Havok's float formatter produced "0" for a validated integer quest key.
+    -- tostring uses the VM's integer conversion and preserves the asset key.
+    return tostring(key)
 end
 local function hidden(entry)
     local key = quest_key(entry)

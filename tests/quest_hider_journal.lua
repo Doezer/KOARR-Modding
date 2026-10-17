@@ -1,5 +1,12 @@
 -- Exercise hiding/restoring as well as bootstrap without the unavailable API.
 math.floor=nil
+-- Reproduce the target runtime's observed float-formatting failure. Quest IDs
+-- must reach persistence unchanged even when this formatter returns zero.
+local standard_format=string.format
+string.format=function(format,...)
+ if format=='%.0f' then return '0' end
+ return standard_format(format,...)
+end
 local messages={}
 local original_print=print
 print=function(message)messages[#messages+1]=message;original_print(message)end
@@ -62,6 +69,16 @@ for _,id in ipairs({0,268435456,43.5,'43',math.huge,0/0}) do
  assert(not S.toggle_selected())
 end
 rows[3].id=valid_id
+-- Asset keys above float32's exact-integer range and at the allowed maximum
+-- must hide and restore under the same decimal key, without losing digits.
+for _,id in ipairs({16777217,268435455}) do
+ rows[3].id=id;selected=3
+ assert(S.toggle_selected() and stored['Hero'..tostring(id)])
+ assert(S.toggle_view());selected=3
+ assert(S.toggle_selected() and not stored['Hero'..tostring(id)])
+ assert(S.toggle_view())
+end
+rows[3].id=valid_id;selected=3
 local a,b=qw.rebuild_quest_list();assert(a==nil and b=='tail')
 assert(S.toggle_view());assert(footer.label=='F6: Restore | F7: Show Normal');assert(rendered[2] and not rendered[3]);assert(not rendered[4]);assert(selected==2)
 local w,x,y=qw.add_template(2);assert(w.label=='[Hidden] Quest 42' and x==nil and y=='tail')

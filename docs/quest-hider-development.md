@@ -163,3 +163,21 @@ The Lua regression checks that detailed and unavailable/throwing diagnostics lea
 quest state unchanged. The bridge token is 0.1.3, so replace DLL and bootstrap
 together. This candidate improves diagnosis; it does not establish the cause or
 fix the preference failure. Preference location is unchanged.
+
+
+### Follow-up: zero key from floating-point formatting
+
+The 0.1.3 diagnostic reports `key=0, action=hide; Invalid quest key (Win32 0)`.
+Lua had already required the numeric key to be positive, integral and within the
+asset-key range before calling `string.format("%.0f", key)`. Thus the textual zero
+was introduced by that conversion; the native parser correctly rejected it
+before storage was attempted. There is no evidence of a filesystem failure in
+that log.
+
+The adapter now uses `tostring(key)`. The native integer-to-string path uses
+integer decimal formatting, avoiding the failing floating-point format. The
+journal regression reproduces the observed formatter returning `"0"` and checks
+hide/restore with ordinary keys, 16777217 and the maximum 268435455. No DLL or
+bridge change is needed. The corrected ZIP retains version 0.1.3, with immutable
+commit-pinned links identifying the revised candidate. In-game behavior still
+requires the user's validation.
