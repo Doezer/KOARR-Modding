@@ -138,3 +138,28 @@ inputs. The corrected ZIP retains version 0.1.2 and its unchanged DLL/bridge
 protocol; users with the complete previous 0.1.2 installation can replace only
 `mods/QuestHider/bootstrap.lua`. Commit-pinned download links distinguish the two
 candidates. The journal/native path still requires target-game validation.
+
+
+## Preference-save investigation — 0.1.3
+
+The subsequent 0.1.2 logs confirm bootstrap, native bridge, renderer initialization
+and profile loading complete. The user confirms the journal opens and F7 works.
+F6 logs `Could not save preference; quest left unchanged.` The old native API
+returns no result for several validation and I/O failures, so this message alone
+does not identify a filesystem error or justify a permissions workaround.
+
+0.1.3 records a failure for every `set_hidden` exit: inactive profile, argument/key/
+action validation, capacity, encoding/path, temporary-file creation, write, short
+write, flush, close and replacement. Windows errors are captured before cleanup
+can overwrite them. `save_error()` returns the detail to Lua, which prints it
+through the framework logger alongside key/action. Native console output was not
+present in the latest uploaded log, so native-only logging is insufficient.
+
+The new diagnostic string return uses the exact-build `lua_pushstring` routine
+at preferred VA 0x00AA3560, guarded by its byte fingerprint. Optional target-VM
+checks emulate its real strlen/hash/stack-write code at both image bases, stubbing
+only string interning. They apply PE relocations to the copied hash jump table.
+The Lua regression checks that detailed and unavailable/throwing diagnostics leave
+quest state unchanged. The bridge token is 0.1.3, so replace DLL and bootstrap
+together. This candidate improves diagnosis; it does not establish the cause or
+fix the preference failure. Preference location is unchanged.

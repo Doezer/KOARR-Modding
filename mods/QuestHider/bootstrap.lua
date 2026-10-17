@@ -14,7 +14,7 @@ if type(N) ~= "table" then
     log("Native helper unavailable; no journal hooks installed.")
     return false
 end
-for _,name in ipairs({"self_test","initialize","profile","suspend","is_hidden","set_hidden","poll"}) do
+for _,name in ipairs({"self_test","initialize","profile","suspend","is_hidden","set_hidden","save_error","poll"}) do
     if type(N[name]) ~= "function" then
         log("Native API incomplete (" .. name .. "); no journal hooks installed.")
         return false
@@ -27,7 +27,7 @@ if type(config) ~= "table" or not valid_key(config.toggle_key) or not valid_key(
     or config.toggle_key == config.hidden_list_key or type(config.profile) ~= "string" then
     log("Invalid config; no journal hooks installed."); return false
 end
-local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.2-preview", native_ready=false, native_attempted=false}
+local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.3-preview", native_ready=false, native_attempted=false}
 G.QuestHider = S
 local function pack(...) return {n=select("#", ...), ...} end
 local function unpacked(t) return unpack(t, 1, t.n) end
@@ -115,9 +115,9 @@ function S.ensure_native()
     if S.native_attempted then return false end
     S.native_attempted=true
     log("Bridge self-test: enter (journal opened).")
-    local bridge_ok,reply=pcall(N.self_test,"QuestHider bridge 0.1.2")
-    if not bridge_ok or reply~="QuestHider bridge 0.1.2" then
-        log("Bridge self-test failed; filtering disabled. Check that the DLL and Lua files are both 0.1.2.")
+    local bridge_ok,reply=pcall(N.self_test,"QuestHider bridge 0.1.3")
+    if not bridge_ok or reply~="QuestHider bridge 0.1.3" then
+        log("Bridge self-test failed; filtering disabled. Check that the DLL and Lua files are both 0.1.3.")
         return false
     end
     log("Bridge self-test: returned expected value.")
@@ -179,7 +179,12 @@ function S.toggle_selected()
     local was_hidden=hidden(entry)
     if entry.finished and not was_hidden then log("Only ongoing quests can be hidden.");return false end
     local action=was_hidden and "show" or "hide"
-    if not N.set_hidden(key,action) then log("Could not save preference; quest left unchanged.");return false end
+    if not N.set_hidden(key,action) then
+        local ok,detail=pcall(N.save_error)
+        if not ok or type(detail)~="string" or detail=="" then detail="Native helper returned no failure detail" end
+        log("Could not save preference; quest left unchanged. key=" .. key .. ", action=" .. action .. "; " .. detail)
+        return false
+    end
     refresh(qw)
     log(was_hidden and "Quest restored." or "Quest hidden. F7 opens the hidden list.")
     return true

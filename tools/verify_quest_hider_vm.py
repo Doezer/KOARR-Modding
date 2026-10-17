@@ -9,7 +9,7 @@ import hashlib
 import struct
 from pathlib import Path
 import pefile
-from unicorn import Uc, UC_ARCH_X86, UC_MODE_32
+from unicorn import Uc, UC_ARCH_X86, UC_MODE_32, UC_HOOK_CODE
 from unicorn.x86_const import *
 
 SHA256 = '16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314'
@@ -24,6 +24,8 @@ def verify(path):
     # Verify the new pop binding, rather than trusting its name/address alone.
     expected = bytes.fromhex('8b4c24088b442404f7d903c903c903c9014824c3')
     assert pe.get_data(0xa9f9a0 - preferred, len(expected)) == expected
+    expected_push = bytes.fromhex('8b54240885d275108b4c2404')
+    assert pe.get_data(0xaa3560 - preferred, len(expected_push)) == expected_push
     cases = 0
     for relocated_base in (preferred, 0x150000):
         for count in (0, 1, 3, 20):
@@ -43,10 +45,15 @@ def verify(path):
                 assert vm.reg_read(UC_X86_REG_EIP) == stop
                 assert vm.reg_read(UC_X86_REG_ESP) == cpu_stack + 4
                 return vm.reg_read(UC_X86_REG_EAX)
-            for va, size in ((0xa9f980, 0x40), (0x10ca240, 0x120)):
+            for va, size in ((0xa9f980, 0x40), (0x10ca240, 0x120), (0xaa3000, 0x1000)):
                 target = relocated_base + va - preferred
                 vm.mem_map(target & ~4095, 4096)
                 vm.mem_write(target, pe.get_data(va - preferred, size))
+                for block in pe.DIRECTORY_ENTRY_BASERELOC:
+                    for entry in block.entries:
+                        if entry.type == 3 and va - preferred <= entry.rva < va - preferred + size:
+                            slot = relocated_base + entry.rva
+                            put(slot, (read(slot) + relocated_base - preferred) & 0xffffffff)
             top_address = relocated_base + 0xa9f980 - preferred
             pop_address = relocated_base + 0xa9f9a0 - preferred
             put(state + 0x24, values + 32 * 8, values)
@@ -59,8 +66,33 @@ def verify(path):
             put(state + 0x24, values + 8, values)
             assert call(relocated_base + 0x10ca240 - preferred, [state]) == 1
             assert read(state + 0x24) == values + 8 and read(values) == 1
+            # Exercise the actual pushstring binding, with only string interning
+            # stubbed: hash/strlen, cdecl arguments and stack writes are real code.
+            intern = relocated_base + 0x1082030 - preferred
+            vm.mem_map(intern & ~4095, 4096)
+            message = b'Create temporary preference file (Win32 5)'
+            message_at = state + 0x100
+            vm.mem_write(message_at, message + b'\0')
+            def intern_string(uc, address, size, data):
+                if address != intern:
+                    return
+                sp = uc.reg_read(UC_X86_REG_ESP)
+                assert read(sp + 4) == state
+                assert read(sp + 8) == message_at
+                assert read(sp + 12) == len(message)
+                uc.reg_write(UC_X86_REG_EAX, 4)  # string tag
+                uc.reg_write(UC_X86_REG_EDX, message_at)
+                uc.reg_write(UC_X86_REG_ESP, sp + 4)
+                uc.reg_write(UC_X86_REG_EIP, read(sp))
+            vm.hook_add(UC_HOOK_CODE, intern_string)
+            call(relocated_base + 0xaa3560 - preferred, [state, message_at])
+            assert read(state + 0x24) == values + 16
+            assert read(values) == 1 and read(values + 4) == 1
+            assert read(values + 8) == 4 and read(values + 12) == message_at
+            call(relocated_base + 0xaa3560 - preferred, [state, 0])
+            assert read(state + 0x24) == values + 24 and read(values + 16) == 0
             cases += 1
-    print(f'{cases} target-VM cases passed: gettop/pop at two image bases; existing-argument return is supported.')
+    print(f'{cases} target-VM cases passed at two image bases: gettop/pop, existing-argument return, diagnostic pushstring/null.')
 
 
 if __name__ == '__main__':

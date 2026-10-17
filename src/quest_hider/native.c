@@ -22,11 +22,13 @@ static size_t hidden_object_count;
 static DWORD last_cache;
 static int cache_dirty=1;
 static unsigned char key_down[256];
+static char save_error[1024];
 void *qh_render_continue, *qh_render_skip;
 void qh_render_hook(void);
 static int (__cdecl *lua_gettop)(void*);
 static void (__cdecl *lua_pop_values)(void*,int);
 static const char *(__cdecl *lua_tostring)(void*,int);
+static void (__cdecl *lua_pushstring)(void*,const char*);
 static void (__cdecl *lua_register)(void*,const char*,const struct lua_reg*);
 static void *(__stdcall *previous_new_state)(void*);
 static void log_line(const char *format,...) {
@@ -80,18 +82,29 @@ static int exact_executable(void) {
     if(hash)BCryptDestroyHash(hash);if(algorithm)BCryptCloseAlgorithmProvider(algorithm,0);
     if(file!=INVALID_HANDLE_VALUE)CloseHandle(file);return ok;
 }
+static int save_failed(const char *operation,DWORD code) {
+    snprintf(save_error,sizeof(save_error),"%s (Win32 %lu); file: %s",operation,(unsigned long)code,profile_file);
+    return 0;
+}
 static int save_store(const struct qh_store *store) {
     char text[QH_FILE_MAX],temporary[MAX_PATH];int length;DWORD written;HANDLE file;
-    length=qh_store_encode(store,profile_name,text,sizeof(text));if(!length)return 0;
-    if(snprintf(temporary,sizeof(temporary),"%s.tmp",profile_file)>=(int)sizeof(temporary))return 0;
+    length=qh_store_encode(store,profile_name,text,sizeof(text));
+    if(!length)return save_failed("Encode preferences",0);
+    if(snprintf(temporary,sizeof(temporary),"%s.tmp",profile_file)>=(int)sizeof(temporary))return save_failed("Temporary path too long",0);
     file=CreateFileA(temporary,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-    if(file==INVALID_HANDLE_VALUE)return 0;
-    if(!WriteFile(file,text,(DWORD)length,&written,NULL)||written!=(DWORD)length||!FlushFileBuffers(file)) {
-        CloseHandle(file);DeleteFileA(temporary);return 0;
+    if(file==INVALID_HANDLE_VALUE)return save_failed("Create temporary preference file",GetLastError());
+    if(!WriteFile(file,text,(DWORD)length,&written,NULL)) {
+        save_failed("Write preferences",GetLastError());CloseHandle(file);DeleteFileA(temporary);return 0;
     }
-    CloseHandle(file);
+    if(written!=(DWORD)length) {
+        save_failed("Incomplete preference write",0);CloseHandle(file);DeleteFileA(temporary);return 0;
+    }
+    if(!FlushFileBuffers(file)) {
+        save_failed("Flush preferences",GetLastError());CloseHandle(file);DeleteFileA(temporary);return 0;
+    }
+    if(!CloseHandle(file)) {save_failed("Close preference file",GetLastError());DeleteFileA(temporary);return 0;}
     if(!MoveFileExA(temporary,profile_file,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) {
-        DeleteFileA(temporary);return 0;
+        save_failed("Replace preference file",GetLastError());DeleteFileA(temporary);return 0;
     }
     return 1;
 }
@@ -169,7 +182,7 @@ static const char *arg(void *state,int index,int count) {
 static int api_self_test(void *state) {
     const char *s=arg(state,1,1);
     /* Exercise the same C-to-Lua return convention, without patching or game inspection. */
-    return s&&!strcmp(s,"QuestHider bridge 0.1.2")?1:0;
+    return s&&!strcmp(s,"QuestHider bridge 0.1.3")?1:0;
 }
 static int api_initialize(void *state) {
     static const unsigned char expected[]={0xf6,0x45,0x04,0x01,0x0f,0x85,0x0f,0x06,0x00,0x00};
@@ -189,11 +202,19 @@ static int api_suspend(void *state) {(void)state;profile_active=0;hidden_object_
 static int api_has(void *state) {uint32_t key;const char *s=arg(state,1,1);return profile_active&&s&&qh_key_parse(s,&key)&&qh_store_has(&hidden_store,key)?1:0;}
 static int api_set(void *state) {
     const char *key_text=arg(state,1,2),*action=arg(state,2,2);uint32_t key;struct qh_store candidate;
-    if(!profile_active||!key_text||!action||!qh_key_parse(key_text,&key))return 0;
-    if(strcmp(action,"hide")&&strcmp(action,"show"))return 0;
+    save_error[0]=0;
+    if(!profile_active)return save_failed("No active profile",0);
+    if(!key_text||!action)return save_failed("Invalid native arguments",0);
+    if(!qh_key_parse(key_text,&key))return save_failed("Invalid quest key",0);
+    if(strcmp(action,"hide")&&strcmp(action,"show"))return save_failed("Invalid hide/restore action",0);
     candidate=hidden_store;
-    if(!qh_store_set(&candidate,key,!strcmp(action,"hide"))||!save_store(&candidate)) {log_line("Preference save failed; previous state retained");return 0;}
+    if(!qh_store_set(&candidate,key,!strcmp(action,"hide")))return save_failed("Hidden quest limit reached",0);
+    if(!save_store(&candidate)) {log_line("Preference save failed: %s",save_error);return 0;}
     hidden_store=candidate;cache_dirty=1;return 1;
+}
+static int api_save_error(void *state) {
+    if(lua_gettop(state)!=0||!save_error[0])return 0;
+    lua_pushstring(state,save_error);return 1;
 }
 static int api_poll(void *state) {
     const char *s=arg(state,1,1);int code=0,pressed;DWORD process=0;
@@ -206,7 +227,7 @@ static int api_poll(void *state) {
 }
 static const struct lua_reg functions[]={
     {"self_test",api_self_test},{"initialize",api_initialize},{"profile",api_profile},{"suspend",api_suspend},
-    {"is_hidden",api_has},{"set_hidden",api_set},{"poll",api_poll},{NULL,NULL}
+    {"is_hidden",api_has},{"set_hidden",api_set},{"save_error",api_save_error},{"poll",api_poll},{NULL,NULL}
 };
 static int resolve_api(void) {
     IMAGE_DOS_HEADER *dos;IMAGE_NT_HEADERS32 *pe;
@@ -214,11 +235,13 @@ static int resolve_api(void) {
     static const unsigned char pop[]={0x8b,0x4c,0x24,0x08,0x8b,0x44,0x24,0x04,0xf7,0xd9,0x03,0xc9,0x03,0xc9,0x03,0xc9,0x01,0x48,0x24,0xc3};
     static const unsigned char reg[]={0x8b,0x44,0x24,0x0c,0x8b,0x4c,0x24,0x08,0x56,0x8b,0x74,0x24,0x08,0x6a,0x00,0x6a,0x00,0x50,0x51,0xe8};
     static const unsigned char string[]={0x8b,0x4c,0x24,0x08,0x81,0xf9,0xf0,0xd8,0xff,0xff,0x7e,0x35};
+    static const unsigned char pushstring[]={0x8b,0x54,0x24,0x08,0x85,0xd2,0x75,0x10,0x8b,0x4c,0x24,0x04};
     base=(uintptr_t)GetModuleHandleA(NULL);dos=(IMAGE_DOS_HEADER*)base;
     if(dos->e_magic!=IMAGE_DOS_SIGNATURE)return 0;pe=(IMAGE_NT_HEADERS32*)(base+dos->e_lfanew);
     if(pe->Signature!=IMAGE_NT_SIGNATURE||pe->FileHeader.Machine!=IMAGE_FILE_MACHINE_I386||pe->FileHeader.TimeDateStamp!=0x63f74827||pe->OptionalHeader.SizeOfImage!=0x0173d000)return 0;
-    if(memcmp((void*)VA(0x00a9f9a0),pop,sizeof(pop))||memcmp((void*)VA(0x00a9f980),top,sizeof(top))||memcmp((void*)VA(0x010adca0),reg,sizeof(reg))||memcmp((void*)VA(0x00a9f8b0),string,sizeof(string)))return 0;
+    if(memcmp((void*)VA(0x00a9f9a0),pop,sizeof(pop))||memcmp((void*)VA(0x00a9f980),top,sizeof(top))||memcmp((void*)VA(0x010adca0),reg,sizeof(reg))||memcmp((void*)VA(0x00a9f8b0),string,sizeof(string))||memcmp((void*)VA(0x00aa3560),pushstring,sizeof(pushstring)))return 0;
     lua_pop_values=(void*)VA(0x00a9f9a0);lua_gettop=(void*)VA(0x00a9f980);lua_tostring=(void*)VA(0x00a9f8b0);lua_register=(void*)VA(0x010adca0);
+    lua_pushstring=(void*)VA(0x00aa3560);
     return 1;
 }
 static void register_library(void *state) {

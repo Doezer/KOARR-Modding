@@ -1,9 +1,13 @@
 -- Exercise hiding/restoring as well as bootstrap without the unavailable API.
 math.floor=nil
+local messages={}
+local original_print=print
+print=function(message)messages[#messages+1]=message;original_print(message)end
 local stored,profile,fail,pressed={},'Hero',false,{}
 QuestHiderNative={self_test=function(s)return s end,initialize=function()return true end,profile=function()return true end,
  suspend=function()end,is_hidden=function(k)return stored[profile..k] end,
  set_hidden=function(k,a)if fail then return nil end;stored[profile..k]=a=='hide' or nil;return true end,
+ save_error=function()return 'Create temporary preference file (Win32 5); file: test-profile.txt' end,
  poll=function(k)local v=pressed[k];pressed[k]=nil;return v end}
 PLAYER={get_player_name=function()return profile end}
 QUEST={get_quest_key_as_int=function(id)return id end,get_name=function(id)return 'Quest '..id end}
@@ -62,7 +66,16 @@ local a,b=qw.rebuild_quest_list();assert(a==nil and b=='tail')
 assert(S.toggle_view());assert(footer.label=='F6: Restore | F7: Show Normal');assert(rendered[2] and not rendered[3]);assert(not rendered[4]);assert(selected==2)
 local w,x,y=qw.add_template(2);assert(w.label=='[Hidden] Quest 42' and x==nil and y=='tail')
 assert(S.toggle_selected());assert(not stored.Hero42);assert(not rendered[2])
-S.toggle_view();selected=3;fail=true;assert(not S.toggle_selected());assert(not stored.Hero43);fail=false
+S.toggle_view();selected=3;fail=true;assert(not S.toggle_selected());assert(not stored.Hero43)
+assert(string.find(messages[#messages],'Win32 5',1,true))
+assert(string.find(messages[#messages],'test-profile.txt',1,true))
+local saved_error=QuestHiderNative.save_error
+for _,failure in ipairs({'missing','throw'})do
+ QuestHiderNative.save_error=function()if failure=='throw' then error('diagnostic error')end end
+ assert(not S.toggle_selected() and not stored.Hero43)
+ assert(string.find(messages[#messages],'Native helper returned no failure detail',1,true))
+end
+QuestHiderNative.save_error=saved_error;fail=false
 selected=5;assert(not S.toggle_selected())
 crash=true;local ok=pcall(qw.rebuild_quest_list);assert(not ok and rows[2].visible and rows[4].visible==false);crash=false
 selected=2;visible=false;pressed['117']=true;qw.on_update_event(1,{});assert(not stored.Hero42)

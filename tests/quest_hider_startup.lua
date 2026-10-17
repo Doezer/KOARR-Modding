@@ -13,7 +13,7 @@ QuestHiderNative={self_test=function(s)bridge_calls=bridge_calls+1;return s end,
  profile=function()profile=profile+1;return true end,
  poll=function()poll=poll+1;return nil end,
  suspend=function()suspend=suspend+1 end,
- is_hidden=function()return nil end,set_hidden=function()return nil end}
+ is_hidden=function()return nil end,set_hidden=function()return nil end,save_error=function()return nil end}
 loadfile=function()error('Game asset loader must not be called by bootstrap')end
 package.loadlib=function()error('Native library loader must not be called by bootstrap')end
 PLAYER={get_player_name=function()return 'Hero' end}
