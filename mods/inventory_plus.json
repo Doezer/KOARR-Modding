@@ -1,0 +1,7 @@
+{
+  "scripts": [
+    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"},
+    {"trigger": "name_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"},
+    {"trigger": "ledger_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"}
+  ]
+}

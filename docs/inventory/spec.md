@@ -1,7 +1,9 @@
 # Inventory Plus — proposed specification
 
-**Status:** research and specification, ready for a technical feasibility spike.
-No installable inventory mod exists yet. Working name: **Inventory Plus**.
+**Status:** source audit complete; first native search-input UI trial implemented.
+The [UI trial](ui-trial.md) does not yet change rows, add tabs or apply search.
+The complete feature set below remains the target, not a claim of shipped behavior.
+Working name: **Inventory Plus**.
 Target: GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, in this same
 repository with its own files and eventual ZIP.
 
