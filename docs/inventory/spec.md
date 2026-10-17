@@ -1,8 +1,10 @@
 # Inventory Plus — proposed specification
 
-**Status:** source audit complete; first native search-input UI trial implemented.
-The [UI trial](ui-trial.md) does not yet change rows, add tabs or apply search.
-The complete feature set below remains the target, not a claim of shipped behavior.
+**Status:** the user confirmed native text input and cancellation in the first UI
+trial. The [0.2.0 preview](README.md) implements category-scoped name search and
+grouped name sorting, with compact hints and keyboard controls. Projected rows
+and native actions need the next target-game check. Direct/clickable tabs and the
+other features below remain targets, not claims of completed behavior.
 Working name: **Inventory Plus**.
 Target: GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, in this same
 repository with its own files and eventual ZIP.

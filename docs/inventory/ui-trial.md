@@ -1,4 +1,6 @@
-# Inventory Plus — search UI trial 0.1.0
+# Inventory Plus — historical search UI trial 0.1.0
+
+The user has confirmed this input trial. Continue with the [0.2.0 search preview](README.md).
 
 This is the first native UI trial for Inventory Plus. It opens the game's own
 text-entry dialog from the inventory and returns the entered text to the
@@ -8,8 +10,8 @@ inventory reminder area.
 Its purpose is to check text focus, confirmation, cancellation and return to the
 inventory on the actual game before enabling row changes.
 
-[Download UI trial](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.1.0-ui-trial.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.1.0-ui-trial.zip.sha256)
+[Download UI trial](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/211d2ae/dist/InventoryPlus-0.1.0-ui-trial.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/211d2ae/dist/InventoryPlus-0.1.0-ui-trial.zip.sha256)
 
 ## Installation
 

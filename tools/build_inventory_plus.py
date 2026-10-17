@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Inventory Plus keyboard helper with the pinned Zig toolchain."""
+"""Build the Inventory Plus input/text helper with the pinned Zig toolchain."""
 import argparse
 import hashlib
 import os

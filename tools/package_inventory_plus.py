@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Package the independent Inventory Plus search UI trial."""
+"""Package the independent Inventory Plus search and name-sort preview."""
 import argparse
 import hashlib
 from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.0-ui-trial'
+VERSION = '0.2.0-preview'
 PAYLOAD = {
     'mods/inventory_plus_native.dll': 'build/inventory_plus_native.dll',
     'mods/inventory_plus.json': 'mods/inventory_plus.json',
-    'mods/InventoryPlus/ui_trial.lua': 'mods/InventoryPlus/ui_trial.lua',
-    'README.md': 'docs/inventory/ui-trial.md',
+    'mods/InventoryPlus/model.lua': 'mods/InventoryPlus/model.lua',
+    'mods/InventoryPlus/inventory_plus.lua': 'mods/InventoryPlus/inventory_plus.lua',
+    'README.md': 'docs/inventory/README.md',
     'LICENSE': 'LICENSE',
 }
 

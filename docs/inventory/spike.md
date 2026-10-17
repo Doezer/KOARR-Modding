@@ -1,6 +1,8 @@
 # Inventory Plus — technical spike findings
 
-Updated 17 October 2026. This is the implementation record for the
+Updated 17 October 2026. Current build: **0.2.0 search/sort preview**. The user
+confirmed the native input trial; projected rows need the next game check.
+This is the implementation record for the
 [specification's feasibility gates](spec.md#technical-approach-and-feasibility-gates).
 
 ## Confirmed evidence
@@ -49,13 +51,13 @@ edit-box call sites without guessing or invoking unknown native signatures.
 | Module discovery | Complete: 125 checksum-validated function exports, including 93 inventory functions | None needed for this stage |
 | Baseline inventory layout | Existing native windows reused in the UI trial | Target check of hint placement and modal layout |
 | Row identity / read-only snapshot | Native `m_last_set` rows contain `item_id` or `header_id`; selected/focused indices resolve through that same table | Duplicate-item and action routing checks after filtered/sorted rows are implemented |
-| One native edit box / category control | Search modal launch/callback contracts audited; guarded Ctrl+F trial implemented | In-game text focus, confirm/cancel and return; category-control layout remains separate |
-| Sorted/filtered list and correct actions | Not enabled; UI trial leaves native rows untouched | Pass text-focus gate, then validate filtering/reordering against item identity |
+| One native edit box / category control | User confirmed text focus, confirm/cancel, untouched items and return; hint visible | New compact hint check; category-control layout remains separate |
+| Sorted/filtered list and correct actions | 0.2.0 implementation and offline handle-routing checks complete | Target-game matching, counts, selection and native actions |
 | Property and compatibility audit | Action, pocket and equipment paths exported | Typed metadata readers, broader UI compatibility and localization |
 
-Offline mocks do not establish native UI focus or gameplay behavior. The current
-[focused UI trial](ui-trial.md) exercises the next gate without changing item
-rows, sorting or invoking item actions. The old export probe is no longer needed.
+Offline mocks do not establish gameplay behavior. The user has now passed the
+text-input gate. The [current search/sort preview](README.md) exercises the next
+row/action gate. The old export probe is no longer needed.
 
 ## Source contracts established from the complete export
 
@@ -93,14 +95,14 @@ longer relevant to export collection: all 125 exports were already complete.
 
 ## Next work
 
-1. Run the UI trial once on the user's game; check input ownership and modal exit.
-2. Build a read-only row model retaining native handles, headers and context;
-   define typed name/property readers from the original item-label paths.
-3. Apply search and stable sorting at the returned-row boundary, preserving
-   selection by handle and rebuilding from a fresh native snapshot.
-4. Validate duplicate names, stacks, equipped/removed items and native actions.
-5. Add visible clickable controls and direct category navigation once their
+1. Validate the 0.2.0 search/sort preview in-game: real name matching, collapsed
+   groups, empty results, duplicate items and native item actions.
+2. Refine metadata/localization behavior from that result, keeping native handles
+   and original category contexts.
+3. Add visible clickable controls and direct category navigation once their
    template/layout and focus contracts have been established.
+4. Audit rarity/type/requirement readers and mixed-category action routing before
+   adding their filters or a combined All view.
 
 ## Historical results from the first target runs (17 October)
 
@@ -154,3 +156,47 @@ rows/actions unchanged outside its owned text dialog. Host C checks cover
 shortcut edges/modifiers/focus, and Lua checks cover guard lifetime, confirmation,
 cancellation, held keys, callback errors, placeholders and native return values.
 Target-game focus/layout/coexistence still require the single test linked above.
+
+
+## Input gate passed; 0.2.0 view projection (17 October)
+
+The latest log records native search requests, accepted text and input restored.
+The user explicitly confirms typing did not act on inventory items and that
+Cancel/Back returns cleanly. The screenshot confirms a native hint is visible,
+but its original trial text is too long. 0.2.0 replaces that with a bounded query
+excerpt, counts and compact controls. The first text-focus gate has therefore
+passed on the user's setup; this does not validate projected item rows yet.
+
+Static native registration tracing identifies `ACTOR.get_actor_display_name` as
+a one-argument, read-only actor-handle reader returning a string. Its actor class
+registration/vtable establishes the namespace, rather than guessing it from the
+name. The adapter checks `ACTOR.is_valid` before reading a display name and before
+returning a selected handle in an active view. No raw getter address is called.
+
+Projection wraps `get_surplus_inventory`: temporary category expansion allows a
+full category snapshot, then flags are restored before matching/sorting. Header
+rows are cloned with updated counts and the category-index map is replaced as a
+unit; item rows retain their native handles/fields. User category expansion
+before search is saved and restored on clear/close. Matching counts include
+collapsed groups; displayed children respect the current collapse flags.
+
+Rebuild captures the selected item handle and remaps it before the native
+`update_selected_window` call. Restoring only after `rebuild_list_win` returned
+would be too late: item-card observers could already have seen the different
+item at the old numeric index. Tests explicitly check all intermediate card
+observations retain the intended handle. A no-result view contains only headers;
+selected-item actions are suppressed when no item exists. Bulk junk destruction
+is blocked during search because it includes concealed items.
+
+The independent native helper now accepts Ctrl+F/Ctrl+S and offers UTF-8 invariant
+Unicode lowercase through documented Windows conversion APIs. Invalid UTF-8 or
+allocation/conversion failures return no result; projection then restores the
+native view. This is not full Unicode case folding or locale collation. The
+helper's string return reuses the fingerprinted pushstring routine already
+verified for Quest Hider. Bridge token is now `InventoryPlus 0.2.0`, requiring a
+matched DLL/adapter update and the JSON that loads the row model first.
+
+The current [preview and test](README.md) replaces the UI trial as the next game
+build. Direct tabs/clickable controls, a combined All view and metadata filters
+remain unimplemented. The model and mock tests do not validate real getter text,
+projected selection/actions, Windows lowercase or layout in the user's process.

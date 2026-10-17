@@ -1,7 +1,10 @@
 {
   "scripts": [
-    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"},
-    {"trigger": "name_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"},
-    {"trigger": "ledger_win", "path": ".\\mods\\InventoryPlus\\ui_trial.lua"}
+    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlus\\model.lua"},
+    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlus\\inventory_plus.lua"},
+    {"trigger": "name_win", "path": ".\\mods\\InventoryPlus\\model.lua"},
+    {"trigger": "name_win", "path": ".\\mods\\InventoryPlus\\inventory_plus.lua"},
+    {"trigger": "ledger_win", "path": ".\\mods\\InventoryPlus\\model.lua"},
+    {"trigger": "ledger_win", "path": ".\\mods\\InventoryPlus\\inventory_plus.lua"}
   ]
 }
