@@ -36,6 +36,25 @@ class InventoryProbeTests(unittest.TestCase):
             self.assertEqual((Path(folder) / 'private/inventory_win.get_selected_item.bin').read_bytes(),
                              (Path(folder) / 'expected.bin').read_bytes())
 
+    def test_placeholder_module_is_revisited_after_its_body_loads(self):
+        lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
+        self.assertIsNotNone(lua, 'Set QH_LUA to a Lua 5.1 interpreter')
+        with tempfile.TemporaryDirectory() as folder:
+            subprocess.run([lua, 'tests/inventory_probe_placeholder.lua', folder], cwd=ROOT, check=True)
+            index = reader.extract(Path(folder) / 'placeholder.log', Path(folder) / 'private')
+            self.assertEqual(index['probe_version'], '0.1.1')
+            self.assertIn('inventory_win.on_window_event', index['functions'])
+
+    def test_partial_utility_log_can_be_retained_explicitly(self):
+        log = log_for().replace('inventory_win.get_selected', 'menu_tools.create_standard_list')
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / 'input.log'
+            source.write_text(log)
+            with self.assertRaises(ValueError):
+                reader.extract(source, Path(folder) / 'default')
+            index = reader.extract(source, Path(folder) / 'partial', allow_partial=True)
+            self.assertIn('menu_tools.create_standard_list', index['functions'])
+
     def test_truncated_duplicate_and_corrupt_exports_rejected(self):
         good = log_for(bytes(range(256)))
         lines = good.splitlines()

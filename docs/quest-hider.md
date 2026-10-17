@@ -1,15 +1,33 @@
-# Quest Hider — 0.1.0 preview
+# Quest Hider — 0.1.1 preview
 
 Hide ongoing quests from the journal and filter their objective icons from maps.
 Restore them through a separate hidden-quest view. Quest progress and your tracked
 quest selection are preserved.
 
+**Startup hang reported in 0.1.0. Keep Quest Hider disabled during inventory
+probe testing.** Version 0.1.1 contains a startup mitigation with offline tests;
+it is not yet confirmed to resolve the failure in-game.
+
+The failed log ends after the native renderer-install message during the
+`minimap_win` trigger. It does not establish whether the native callback return,
+the subsequent game `loadfile` operation or another interaction caused the hang.
+This revision loads config through ordered framework script entries, removes
+nested `loadfile`/`loadlib` calls, guards Lua bootstrap errors and defers native
+initialization until the journal's SHOW event. Native DLL registration still
+happens when the framework loads DLLs. A native hang cannot be caught by Lua
+`pcall`; moving the call out of startup is a mitigation, not proof that the
+native path is correct.
+
+To disable the mod, close the game and move **both** `mods/quest_hider.json` and
+`mods/quest_hider_native.dll` out of `mods`. Removing the JSON alone does not stop
+the framework loading the DLL.
+
 **Experimental: built and tested offline, awaiting in-game validation.** This is
 an independent mod in the same repository as All Quest Markers. It does not require
 All Quest Markers, and its renderer hook occupies a different code range.
 
-[Download preview ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.0-preview.zip.sha256)
+[Download preview ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/QuestHider-0.1.1-preview.zip.sha256)
 
 ## Requirements and installation
 
@@ -22,8 +40,13 @@ All Quest Markers, and its renderer hook occupies a different code range.
 16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314
 ```
 
+When testing the mitigation separately, replace the JSON, `config.lua` and
+`bootstrap.lua` together. Replacing only the Lua bootstrap leaves the old config
+loading order, and the adapter will disable itself. Keep your profile files.
+
 Close the game. Extract the ZIP into the folder containing `koa.exe`, merging
-`mods`, then restart. No console command is needed.
+`mods`, then restart. No console command is needed. Native filtering remains inactive until you first
+open the quest journal during that game session.
 
 ```text
 mods/

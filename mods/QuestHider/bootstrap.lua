@@ -1,31 +1,31 @@
+-- Catch Lua startup errors before they escape the framework's unprotected call.
+local function bootstrap()
 -- Quest Hider preview. Only journal display state and this mod's preferences change.
 local G = _G
 local existing = rawget(G, "QuestHider")
 if existing and existing.enabled then existing.attach(); return existing end
 local function log(s) print("[QuestHider] " .. s) end
 local N = rawget(G, "QuestHiderNative")
-if type(N) ~= "table" and type(package) == "table" and type(package.loadlib) == "function" then
-    local loader = package.loadlib("mods/quest_hider_native.dll", "luaopen_QuestHiderNative")
-    if loader then pcall(loader) end
-    N = rawget(G, "QuestHiderNative")
-end
-if type(N) ~= "table" or type(N.initialize) ~= "function" then
-    log("Native helper unavailable. Install quest_hider_native.dll and restart; no journal hooks installed.")
+-- The framework loads config.lua first. Do not nest the game's asset loader
+-- inside a framework require callback or initialize native rendering at startup.
+local config = rawget(G, "QuestHiderConfig")
+log("Startup: configuration received; native initialization deferred until journal SHOW.")
+if type(N) ~= "table" then
+    log("Native helper unavailable; no journal hooks installed.")
     return false
 end
-if not N.initialize("QuestHider") then
-    log("Native compatibility check failed; no journal hooks installed. Check native startup log.")
-    return false
+for _,name in ipairs({"initialize","profile","suspend","is_hidden","set_hidden","poll"}) do
+    if type(N[name]) ~= "function" then
+        log("Native API incomplete (" .. name .. "); no journal hooks installed.")
+        return false
+    end
 end
-local config_chunk, config_error = loadfile("mods/QuestHider/config.lua")
-if not config_chunk then log("Cannot load config: " .. tostring(config_error)); return false end
-local config = config_chunk()
 local function valid_key(k) return type(k) == "number" and k >= 1 and k <= 255 and k == math.floor(k) end
 if type(config) ~= "table" or not valid_key(config.toggle_key) or not valid_key(config.hidden_list_key)
     or config.toggle_key == config.hidden_list_key or type(config.profile) ~= "string" then
     log("Invalid config; no journal hooks installed."); return false
 end
-local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.0-preview"}
+local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.1-preview", native_ready=false, native_attempted=false}
 G.QuestHider = S
 local function pack(...) return {n=select("#", ...), ...} end
 local function unpacked(t) return unpack(t, 1, t.n) end
@@ -108,8 +108,20 @@ local function accepted(entry)
     if not S.profile_ready then return true end
     return hidden(entry) == S.hidden_view
 end
+function S.ensure_native()
+    if S.native_ready then return true end
+    if S.native_attempted then return false end
+    S.native_attempted=true
+    log("Native initialize: enter (journal opened).")
+    local ok,result=pcall(N.initialize,"QuestHider")
+    log("Native initialize: returned " .. (ok and (result and "success" or "disabled") or "Lua error") .. ".")
+    S.native_ready=ok and not not result
+    if not S.native_ready then log("Quest filtering disabled; original journal remains available.") end
+    return S.native_ready
+end
 local profile_warning = false
 function S.sync_profile()
+    if not S.native_ready then S.profile_ready=false;return false end
     local name = config.profile
     if name == "" then
         local player = rawget(G, "PLAYER")
@@ -151,7 +163,7 @@ local function refresh(qw)
 end
 function S.toggle_selected()
     local qw=rawget(G,"quests_win")
-    if type(qw) ~= "table" or type(qw.get_selected_quest) ~= "function" or not S.sync_profile() then return false end
+    if type(qw) ~= "table" or type(qw.get_selected_quest) ~= "function" or not S.native_ready or not S.sync_profile() then return false end
     local entry=qw.get_selected_quest()
     local key=quest_key(entry)
     if not key then log("Select a quest row first."); return false end
@@ -164,7 +176,7 @@ function S.toggle_selected()
     return true
 end
 function S.toggle_view()
-    if not S.sync_profile() then return false end
+    if not S.native_ready or not S.sync_profile() then return false end
     local qw=rawget(G,"quests_win")
     if type(qw) ~= "table" then return false end
     S.hidden_view=not S.hidden_view
@@ -228,13 +240,16 @@ local function attach_journal(qw)
     end end)
     wrap(qw,"on_window_event",function(original) return function(event,...)
         if S.enabled and event=="SHOW" then
-            S.hidden_view=false;S.sync_profile()
-            N.poll(tostring(config.toggle_key));N.poll(tostring(config.hidden_list_key))
+            S.hidden_view=false
+            if S.ensure_native() then
+                S.sync_profile()
+                N.poll(tostring(config.toggle_key));N.poll(tostring(config.hidden_list_key))
+            end
             log("F6: hide/restore selected quest. F7: normal/hidden list.")
         end
         if event=="START_CLOSE" then restore_hint();S.hidden_view=false end
         local previous_scope=reminder_scope
-        reminder_scope=S.enabled and event=="SHOW"
+        reminder_scope=S.enabled and S.native_ready and event=="SHOW"
         local result=pack(pcall(original,event,...))
         reminder_scope=previous_scope
         if not result[1] then
@@ -246,7 +261,7 @@ local function attach_journal(qw)
     wrap(qw,"on_update_event",function(original) return function(dt,window,...)
         local result=pack(original(dt,window,...))
         local W=rawget(G,"WINDOW")
-        if S.enabled and qw.m_inited and type(W)=="table" and type(W.is_visible)=="function"
+        if S.enabled and S.native_ready and qw.m_inited and type(W)=="table" and type(W.is_visible)=="function"
             and (window or qw.m_window) and W.is_visible(window or qw.m_window) then
             local toggle=N.poll(tostring(config.toggle_key))
             local view=N.poll(tostring(config.hidden_list_key))
@@ -271,7 +286,8 @@ function S.attach()
 end
 function S.detach()
     restore_hint()
-    S.enabled=false;S.profile_ready=false;N.suspend()
+    S.enabled=false;S.profile_ready=false
+    if S.native_ready then N.suspend() end
     for i=#S.hooks,1,-1 do
         local h=S.hooks[i]
         if h.module[h.name]==h.replacement then h.module[h.name]=h.original end
@@ -279,5 +295,15 @@ function S.detach()
     return true
 end
 S.attach()
-log("Preview loaded. Open the journal: F6 hides/restores, F7 opens hidden quests.")
+log("Lua adapter ready; native initialization awaits journal SHOW. F6 hides/restores, F7 switches lists.")
 return S
+
+end
+local ok,result=pcall(bootstrap)
+if not ok then
+    local partial=rawget(_G,"QuestHider")
+    if type(partial)=="table" and type(partial.detach)=="function" then pcall(partial.detach) end
+    print("[QuestHider] Lua bootstrap failed; adapter disabled: "..tostring(result))
+    return false
+end
+return result

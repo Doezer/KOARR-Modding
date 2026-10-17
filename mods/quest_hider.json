@@ -1,6 +1,20 @@
 {
   "scripts": [
-    {"trigger": "quests_win", "path": ".\\mods\\QuestHider\\bootstrap.lua"},
-    {"trigger": "minimap_win", "path": ".\\mods\\QuestHider\\bootstrap.lua"}
+    {
+      "trigger": "quests_win",
+      "path": ".\\mods\\QuestHider\\config.lua"
+    },
+    {
+      "trigger": "quests_win",
+      "path": ".\\mods\\QuestHider\\bootstrap.lua"
+    },
+    {
+      "trigger": "minimap_win",
+      "path": ".\\mods\\QuestHider\\config.lua"
+    },
+    {
+      "trigger": "minimap_win",
+      "path": ".\\mods\\QuestHider\\bootstrap.lua"
+    }
   ]
 }

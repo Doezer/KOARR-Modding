@@ -1,6 +1,6 @@
 # Inventory Plus — technical spike findings
 
-Updated 16 October 2026. This is the implementation record for the
+Updated 17 October 2026. This is the implementation record for the
 [specification's feasibility gates](spec.md#technical-approach-and-feasibility-gates).
 
 ## Confirmed evidence
@@ -81,3 +81,42 @@ not required to reconstruct the exported functions.
    control and one edit box, with no filtering/action changes until input
    isolation has been demonstrated on the target build.
 5. Record the in-game result before implementing name filtering and sorting.
+
+## Results from the first target runs (17 October)
+
+The first log stops after Quest Hider's native renderer-install message during
+`minimap_win`, while the probe had finished its menu helper export and startup
+had continued. The user then reached the game and browsed inventory with Quest
+Hider removed and the probe still installed. Keep Quest Hider disabled for the
+next inventory run; its separate startup mitigation remains unverified in-game.
+
+The second log contains 19 complete, checksum-validated function exports: the
+standard-list helper, ten name-window functions and eight inventory-manager
+functions. They were reconstructed and inspected privately. The input window's
+launch function takes six arguments (title, default text, localization flag,
+text limit, callback and cancellation restriction). Its initialization registers
+modal input, finds an edit box, sets its title/limit and focuses it. Confirmation
+reads the edit-box text and invokes the supplied callback; cancellation also
+returns through the callback. This is a concrete path to investigate for search
+input. It has not yet been launched for inventory or tested for input isolation.
+
+The manager's inventory-count function calls `get_player()` and ACTOR inventory
+readers, excludes certain native equipment/quest categories, and handles the
+Autosell pocket separately. Bag capacity count therefore cannot be assumed equal
+to the number of visible rows. These call sites are evidence; the probe does not
+invoke them or change native limits.
+
+The log also reveals a probe defect: `inventory_win` and `ledger_win` exist as
+metadata-only tables during the manager trigger, before their bodies finish
+loading. Probe 0.1.0 permanently marked those tables as seen, exporting zero
+functions and installing no inventory observers. It therefore missed the later
+real inventory module even though the user performed the requested test.
+
+Probe 0.1.1 rescans on later triggers, tracks exported names individually and
+installs observers once the functions appear. A regression reproduces exactly
+the placeholder-then-populated loading order and verifies that exports occur
+once, original callbacks are exported and returned values remain unchanged.
+The reader now explains this known failure instead of telling the tester simply
+to open inventory again; `--allow-partial` can retain the valid utility exports.
+The next target run needs only the probe Lua file replaced, with Quest Hider
+still disabled. Inventory row/action contracts remain the missing gate.

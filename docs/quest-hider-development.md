@@ -39,10 +39,18 @@ the proprietary game or establish in-game compatibility.
 ## Integration
 
 The framework loads `mods/quest_hider_native.dll`. The helper chains the existing
-framework Lua-state registration hook; `package.loadlib` provides a fallback.
+framework Lua-state registration hook. The Lua adapter requires that registered
+table; it no longer calls `package.loadlib` during startup.
 Both paths register `QuestHiderNative`, then the `quests_win` and `minimap_win`
 script triggers attach the original Lua adapter. Original game Lua files are
 never replaced or distributed.
+
+Native initialization is deferred until the quest journal SHOW event. Config
+loads through the framework before the bootstrap; it no longer uses nested
+`loadfile` calls. Lua bootstrap errors are caught, and initialize enter/return
+markers narrow a subsequent failure. A reported 0.1.0 startup hang is not yet
+confirmed fixed on the target build; keep Quest Hider disabled for inventory
+probe runs.
 
 The helper first checks PE identity and API fingerprints, then verifies the exact
 on-disk executable SHA-256 before installing the renderer hook. Preferred image

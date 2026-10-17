@@ -222,7 +222,7 @@ static void hook_framework_state(void) {
     static const unsigned char prefix[]={0x8b,0x47,0x08,0xff,0x88,0xdc,0x02,0x00,0x00,0x8b,0xc7,0x5f,0x5e,0x5d,0x5b,0x59};
     uintptr_t start=VA(0x010d2c25);unsigned char *call=(unsigned char*)(start+17);int32_t old,new_delta;
     if(memcmp((void*)start,prefix,sizeof(prefix))||*(unsigned char*)(start+16)!=0x50||call[0]!=0xe8||call[5]!=0xc3) {
-        log_line("Framework state hook unavailable; Lua loadlib fallback will be used");return;
+        log_line("Framework state hook unavailable; Lua adapter will stay disabled without registration");return;
     }
     memcpy(&old,call+1,4);previous_new_state=(void*)(call+5+old);
     if((uintptr_t)previous_new_state>=base && (uintptr_t)previous_new_state<base+0x173d000) {previous_new_state=NULL;return;}

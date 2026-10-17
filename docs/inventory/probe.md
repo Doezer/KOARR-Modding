@@ -1,4 +1,4 @@
-# Inventory Plus — technical probe 0.1.0
+# Inventory Plus — technical probe 0.1.1
 
 This is a **diagnostic build**, not the inventory overhaul. It collects the
 original inventory Lua function exports and bounded snapshots of existing module
@@ -8,13 +8,26 @@ It does not add a search box, sort/filter the inventory, call inventory getters,
 change items, or alter the existing mods. It requires Mod Framework v1.4 on the
 GOG Re-Reckoning setup used for the earlier tests. No extra DLL is included.
 
-[Download diagnostic ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-Probe-0.1.0.zip)
-· [Checksum](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-Probe-0.1.0.zip.sha256)
+[Download diagnostic ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-Probe-0.1.1.zip)
+· [Checksum](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-Probe-0.1.1.zip.sha256)
+
+## Update from 0.1.0
+
+The first probe could see an inventory module placeholder before its functions
+loaded and then skip that module permanently. Version 0.1.1 rescans modules on
+later triggers, exports each newly discovered function once and attaches its
+observers after the callbacks become available. Your earlier log's missing
+inventory export was a probe bug, not a failure to open the inventory.
+
+For this update, replace only `mods/InventoryPlusProbe/probe.lua` with the new
+version and restart. The manifest is unchanged. The full ZIP is also available.
 
 ## One test run
 
 1. Close the game. Extract this ZIP into the folder containing `koa.exe`, merging
-   `mods`. Leave All Quest Markers and Quest Hider installed if you use them.
+   `mods`. Keep Quest Hider disabled for this test: move both
+   `mods/quest_hider.json` and `mods/quest_hider_native.dll` out of `mods` with the
+   game closed. All Quest Markers may remain installed.
 2. Start the game and load a save. Open the inventory, browse **Weapons** and
    **Consumables**, and select two different items. If readily available, select
    two copies of the same named item; do not obtain or modify items just for this.
@@ -30,7 +43,7 @@ probe observes the actions you naturally take; it never opens the name-entry
 window. A `name_win` function export is used only to inspect how the native text
 entry control is built and how its input focus works.
 
-A healthy run includes `BEGIN version=0.1.0`, `MODULE inventory_win`,
+A healthy run includes `BEGIN version=0.1.1`, `MODULE inventory_win`,
 `BLOB-BEGIN` / `BLOB-CHUNK` / `BLOB-END` lines and `SNAPSHOT` lines. A console
 message saying `READY` confirms the probe loaded, not that search or sorting works.
 If there is no `MODULE inventory_win`, send the startup log anyway so we can
@@ -50,7 +63,7 @@ and the other mods stay installed.
 
 The probe uses standard `string.dump` to export a bounded set of original Lua
 functions from `inventory_win`, `player_inventory_manager`, `name_win`,
-`menu_tools` and `ledger_win`. The exact trigger names were found in the earlier
+`menu_tools`, `uixml_helper` and `ledger_win`. The exact trigger names were found in the earlier
 user-provided framework log. Exports are hexadecimal text with per-function
 Adler-32 checksums; they are never executed by the analysis tool.
 
@@ -68,7 +81,8 @@ item. Function exports must establish the actual row/action contract next.
 
 Limits: 32 KiB per function, 384 KiB total function bytes, 96-byte log chunks,
 96 functions per module and bounded table traversal. Oversized or non-dumpable
-functions are reported as `SKIP`. Modules are exported once per Lua session.
+functions are reported as `SKIP`. Each function name is exported once per Lua session; placeholder modules are
+revisited as their bodies load.
 The snapshot may include displayed item names and other existing inventory
 strings. Keep these logs and the proprietary bytecode private; do not attach them
 to public GitHub issues or commit them into the repository.

@@ -25,6 +25,11 @@ class QuestHiderTests(unittest.TestCase):
         self.assertIsNotNone(lua, 'Set QH_LUA to a Lua 5.1 interpreter')
         subprocess.run([lua, 'tests/quest_hider_journal.lua'], cwd=ROOT, check=True)
 
+    def test_startup_native_initialization_is_deferred(self):
+        lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
+        self.assertIsNotNone(lua, 'Set QH_LUA to a Lua 5.1 interpreter')
+        subprocess.run([lua, 'tests/quest_hider_startup.lua'], cwd=ROOT, check=True)
+
     def test_preview_package(self):
         spec = importlib.util.spec_from_file_location('qh_package', ROOT / 'tools/package_quest_hider.py')
         package = importlib.util.module_from_spec(spec)
@@ -37,6 +42,12 @@ class QuestHiderTests(unittest.TestCase):
                 self.assertEqual(set(z.namelist()), set(package.PAYLOAD))
                 self.assertNotIn('mods/all_quest_markers_native.json', z.namelist())
                 self.assertEqual(z.read('mods/quest_hider_native.dll')[:2], b'MZ')
+                import json
+                scripts = json.loads(z.read('mods/quest_hider.json'))['scripts']
+                for trigger in ('quests_win', 'minimap_win'):
+                    names = [entry['path'].replace('\\', '/').split('/')[-1]
+                             for entry in scripts if entry['trigger'] == trigger]
+                    self.assertEqual(names, ['config.lua', 'bootstrap.lua'])
 
 
 if __name__ == '__main__':

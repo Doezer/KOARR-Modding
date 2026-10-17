@@ -41,6 +41,7 @@ end
 qw.update_rose=function()return nil,'rose' end
 qw.on_update_event=function()return nil,'update' end
 local original=qw.rebuild_quest_list
+dofile('mods/QuestHider/config.lua')
 local S=dofile('mods/QuestHider/bootstrap.lua')
 local e,f=qw.on_window_event('SHOW');assert(e==nil and f=='event')
 assert(footer.label=='F6: Hide | F7: Show Hidden')
@@ -66,13 +67,8 @@ qw.on_window_event('SHOW');assert(footer.label=='F6: Hide | F7: Show Hidden')
 S.detach();assert(qw.rebuild_quest_list==original and not S.enabled)
 assert(footer.label=='Localized 1651000' and ledger_win.set_reminder==reminder_setter)
 -- Configured keys must be reflected in the visible UI, including non-F keys.
-local real_loadfile=loadfile
-loadfile=function(path)
- if path=='mods/QuestHider/config.lua' then return function()
-  return {toggle_key=65,hidden_list_key=120,profile=''} end end
- return real_loadfile(path)
-end
-S=dofile('mods/QuestHider/bootstrap.lua');loadfile=real_loadfile
+QuestHiderConfig={toggle_key=65,hidden_list_key=120,profile=''}
+S=dofile('mods/QuestHider/bootstrap.lua')
 qw.on_window_event('SHOW');assert(footer.label=='A: Hide | F9: Show Hidden')
 S.toggle_view();assert(footer.label=='A: Restore | F9: Show Normal')
 -- UI setter and event errors must never leave shared APIs wrapped.

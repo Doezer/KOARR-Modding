@@ -17,7 +17,7 @@ PAYLOAD = {
 def build(output):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
-    archive = output / 'InventoryPlus-Probe-0.1.0.zip'
+    archive = output / 'InventoryPlus-Probe-0.1.1.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
         for name, source in sorted(PAYLOAD.items()):
             info = zipfile.ZipInfo(name, date_time=(2026, 10, 16, 0, 0, 0))

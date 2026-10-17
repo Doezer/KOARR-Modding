@@ -33,9 +33,9 @@ def parse_log(text):
             continue
         message = line.split(PREFIX, 1)[1].strip()
         if message.startswith('BEGIN '):
-            if message != 'BEGIN version=0.1.0':
+            if message not in {'BEGIN version=0.1.0', 'BEGIN version=0.1.1'}:
                 raise ValueError('Unsupported probe log version')
-            current = []
+            current = [message]
             sessions.append(current)
         elif current is not None:
             current.append(message)
@@ -88,18 +88,23 @@ def parse_log(text):
     return exports, messages, len(sessions)
 
 
-def extract(log_path, output):
+def extract(log_path, output, allow_partial=False):
     output = Path(output).resolve()
     # Game bytecode and snapshots must stay outside public tracked directories.
     if (output == ROOT or ROOT in output.parents) and output != ROOT / 'build' and ROOT / 'build' not in output.parents:
         raise ValueError('Inside this repository, use the ignored build/ directory for private output')
     text = Path(log_path).read_text(encoding='utf-8-sig', errors='replace')
     exports, messages, sessions = parse_log(text)
-    if not any(key.startswith('inventory_win.') for key in exports):
-        raise ValueError('No inventory_win functions found. Open the inventory before collecting the log.')
+    if not allow_partial and not any(key.startswith('inventory_win.') for key in exports):
+        if 'MODULE inventory_win' in messages:
+            raise ValueError('inventory_win was observed without exported functions. '
+                             'Probe 0.1.0 could skip an early placeholder; use probe 0.1.1. '
+                             'Use --allow-partial to retain the other validated exports.')
+        raise ValueError('No inventory_win exports found. It may not have loaded yet. '
+                         'Use --allow-partial to retain the other validated exports.')
     # Validate the complete session before writing anything.
     output.mkdir(parents=True, exist_ok=True)
-    index = {'probe_version': '0.1.0', 'selected_session': sessions,
+    index = {'probe_version': messages[0].split('version=', 1)[1], 'selected_session': sessions,
              'functions': {key: len(data) for key, data in sorted(exports.items())}}
     for key, data in exports.items():
         (output / f'{key}.bin').write_bytes(data)
@@ -112,10 +117,12 @@ def extract(log_path, output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('log', type=Path)
+    parser.add_argument('--allow-partial', action='store_true',
+                        help='Retain validated utility exports even if inventory_win is missing')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/inventory-probe-private')
     args = parser.parse_args()
     try:
-        index = extract(args.log, args.output)
+        index = extract(args.log, args.output, allow_partial=args.allow_partial)
     except (ValueError, OSError) as error:
         parser.exit(1, f'{error}\n')
     print(f'Validated {len(index["functions"])} functions from session {index["selected_session"]}.')

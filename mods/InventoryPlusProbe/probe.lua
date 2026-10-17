@@ -2,7 +2,7 @@
 local G=_G
 local old=rawget(G,"InventoryPlusProbe")
 if type(old)=="table" and old.active then old.collect();return old end
-local S={active=true,version="0.1.0",seen={},hooks={},bytes=0,events=0}
+local S={active=true,version="0.1.1",seen={},hooks={},bytes=0,events=0}
 G.InventoryPlusProbe=S
 local function log(text) print("[InventoryPlusProbe] "..text) end
 local function pack(...) return {n=select("#",...),...} end
@@ -94,7 +94,7 @@ end
 local function attach_inventory(m)
     for _,name in ipairs({"on_window_event","on_button_event_selection","on_inputdeviceaction_event","on_editbox_event"}) do
         local fn=rawget(m,name)
-        if type(fn)=="function" and not S.hooks[name] then
+        if type(fn)=="function" and (not S.hooks[name] or S.hooks[name].module~=m) then
             local replacement=function(...)
                 -- Run the original naturally-triggered callback, preserving all arguments/results/errors.
                 local result=pack(fn(...))
@@ -114,28 +114,43 @@ local function attach_inventory(m)
         end
     end
 end
-local targets={"inventory_win","player_inventory_manager","name_win","menu_tools","ledger_win"}
-local utility={init=true,create_standard_list=true,set_reminder=true,button_set_text=true,
+local targets={"inventory_win","player_inventory_manager","name_win","uixml_helper","menu_tools","ledger_win"}
+local utility={init=true,create_standard_list=true,create_tabbed_title_bar=true,create_menu_button_helper=true,set_reminder=true,button_set_text=true,
     button_set_generic=true,button_set_state=true,on_editbox_event=true,handle_input=true,
     on_inputdeviceaction_event=true,on_window_event=true}
 function S.collect()
     if not S.active then return end
     for _,module in ipairs(targets) do
         local m=rawget(G,module)
-        if type(m)=="table" and not S.seen[module] then
-            S.seen[module]=true;log("MODULE "..module)
-            local exported=0
+        if type(m)=="table" then
+            local state=S.seen[module]
+            local changed=false
+            if not state then
+                changed=true
+                state={functions={},fields={},exported=0}
+                S.seen[module]=state;log("MODULE "..module)
+            end
+            -- Circular requires expose _M/_NAME placeholders before function bodies
+            -- exist. Rescan on later triggers and export each function name once.
             for _,name in ipairs(keys(m,256)) do
                 local value=rawget(m,name)
-                log("FIELD "..module.."."..name.." "..type(value))
-                if type(value)=="function" and exported<96
+                local h=S.hooks[name]
+                if h and h.module==m and value==h.replacement then value=h.original end
+                local kind=type(value)
+                if state.fields[name]~=kind then
+                    changed=true
+                    state.fields[name]=kind;log("FIELD "..module.."."..name.." "..kind)
+                end
+                if kind=="function" and not state.functions[name]
                     and ((module~="ledger_win" and module~="menu_tools") or utility[name]) then
-                    exported=exported+1;dump_function(module,name,value)
+                    state.functions[name]=true
+                    if state.exported<96 then
+                        state.exported=state.exported+1;dump_function(module,name,value)
+                    else log("SKIP "..module.."."..name.." module-function-budget") end
                 end
             end
-            -- Export original functions first, then attach bounded passive event observers.
             if module=="inventory_win" then attach_inventory(m) end
-            log("MODULE-END "..module.." functions="..exported)
+            if changed then log("MODULE-END "..module.." functions="..state.exported) end
         end
     end
 end
