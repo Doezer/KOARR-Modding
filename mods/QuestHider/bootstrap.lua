@@ -20,7 +20,9 @@ for _,name in ipairs({"self_test","initialize","profile","suspend","is_hidden","
         return false
     end
 end
-local function valid_key(k) return type(k) == "number" and k >= 1 and k <= 255 and k == math.floor(k) end
+-- This game's Lua runtime does not expose math.floor. Integer validation must
+-- work with language operators alone, both for configured keys and quest IDs.
+local function valid_key(k) return type(k) == "number" and k >= 1 and k <= 255 and k % 1 == 0 end
 if type(config) ~= "table" or not valid_key(config.toggle_key) or not valid_key(config.hidden_list_key)
     or config.toggle_key == config.hidden_list_key or type(config.profile) ~= "string" then
     log("Invalid config; no journal hooks installed."); return false
@@ -89,7 +91,7 @@ local function quest_key(entry)
     local api = rawget(G, "QUEST")
     if type(api) ~= "table" or type(api.get_quest_key_as_int) ~= "function" then return nil end
     local key = api.get_quest_key_as_int(entry.id)
-    if type(key) ~= "number" or key < 1 or key > 268435455 or key ~= math.floor(key) then return nil end
+    if type(key) ~= "number" or key < 1 or key > 268435455 or key % 1 ~= 0 then return nil end
     return string.format("%.0f", key)
 end
 local function hidden(entry)

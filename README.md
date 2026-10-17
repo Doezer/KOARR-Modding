@@ -5,7 +5,7 @@ A collection of independently installable mods. Pick the ZIP for the mod you wan
 | Mod | Status | Download / details |
 | --- | --- | --- |
 | All Quest Markers on World Map | Confirmed working · 1.0.1 | [Nexus Mods](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97) · details below |
-| Quest Hider | Startup hang reported · keep disabled for inventory tests | [0.1.2 candidate and focused test](docs/quest-hider.md) |
+| Quest Hider | Preview · Lua startup correction; game validation pending | [0.1.2 candidate and focused test](docs/quest-hider.md) |
 | Inventory Plus | Technical spike · diagnostic probe only | [One-run diagnostic test](docs/inventory/probe.md) · [Specification](docs/inventory/spec.md) · [Research](docs/inventory/research.md) |
 
 Quest Hider adds **F6** to hide/restore a journal quest and **F7** to switch to the

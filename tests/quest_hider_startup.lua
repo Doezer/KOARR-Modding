@@ -1,4 +1,6 @@
 -- Startup must not call the game loader, package loader or native helper functions.
+-- Match the missing standard-library function observed in the target game log.
+math.floor=nil
 local initialize,profile,poll,suspend,shows=0,0,0,0,0
 local outcome='success'
 local bridge_calls=0
@@ -32,6 +34,11 @@ assert(initialize==0 and quests_win.on_window_event==original)
 QuestHiderConfig={toggle_key=117,hidden_list_key=117,profile=''}
 assert(dofile('mods/QuestHider/bootstrap.lua')==false)
 assert(initialize==0 and quests_win.on_window_event==original)
+for _,key in ipairs({0,256,117.5,'117',math.huge,0/0}) do
+ QuestHiderConfig={toggle_key=key,hidden_list_key=118,profile=''}
+ assert(dofile('mods/QuestHider/bootstrap.lua')==false)
+ assert(initialize==0 and quests_win.on_window_event==original)
+end
 dofile('mods/QuestHider/config.lua')
 local S=dofile('mods/QuestHider/bootstrap.lua')
 assert(type(S)=='table' and not S.native_ready)

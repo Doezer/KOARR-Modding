@@ -1,3 +1,5 @@
+-- Exercise hiding/restoring as well as bootstrap without the unavailable API.
+math.floor=nil
 local stored,profile,fail,pressed={},'Hero',false,{}
 QuestHiderNative={self_test=function(s)return s end,initialize=function()return true end,profile=function()return true end,
  suspend=function()end,is_hidden=function(k)return stored[profile..k] end,
@@ -49,6 +51,13 @@ assert(WINDOW.set_label_text==plain_setter and WINDOW.set_label_text_formatted==
 local r,t=qw.update_rose();assert(r==nil and t=='rose')
 assert(S.toggle_selected());assert(stored.Hero42);assert(not rendered[2] and rendered[3]);assert(rows[2].visible)
 assert(selected==3)
+-- Fractional, invalid and out-of-range IDs must never reach native persistence.
+local valid_id=rows[3].id
+for _,id in ipairs({0,268435456,43.5,'43',math.huge,0/0}) do
+ rows[3].id=id
+ assert(not S.toggle_selected())
+end
+rows[3].id=valid_id
 local a,b=qw.rebuild_quest_list();assert(a==nil and b=='tail')
 assert(S.toggle_view());assert(footer.label=='F6: Restore | F7: Show Normal');assert(rendered[2] and not rendered[3]);assert(not rendered[4]);assert(selected==2)
 local w,x,y=qw.add_template(2);assert(w.label=='[Hidden] Quest 42' and x==nil and y=='tail')

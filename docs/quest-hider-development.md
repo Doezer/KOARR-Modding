@@ -123,6 +123,18 @@ and logs the failure. Native logs write only to the console handle; the redundan
 `OutputDebugString` sink was removed so a debugger/overlay output path is not
 part of a native API return. This is not a claim that that sink caused the hang.
 
-The candidate still needs the focused startup/journal test on the user's game.
-Passing the C, Lua and CPU-emulation checks cannot establish that the original
-startup hang has been resolved.
+### Follow-up log: missing `math.floor`
+
+The user's 0.1.2 log continues through startup into gameplay, but each bootstrap
+trigger reports `function expected instead of nil` at `valid_key`, line 23.
+That call is `math.floor`; the protected bootstrap disables the adapter before
+native self-test or renderer initialization. This log therefore supplies no
+in-game result for either deferred native operation.
+
+The correction replaces both integer checks (configured virtual keys and quest
+asset keys) with modulo arithmetic. Startup and journal regressions now run with
+`math.floor` removed and check fractional, out-of-range, string, infinite and NaN
+inputs. The corrected ZIP retains version 0.1.2 and its unchanged DLL/bridge
+protocol; users with the complete previous 0.1.2 installation can replace only
+`mods/QuestHider/bootstrap.lua`. Commit-pinned download links distinguish the two
+candidates. The journal/native path still requires target-game validation.

@@ -4,9 +4,11 @@ Hide ongoing quests from the journal and filter their objective icons from maps.
 Restore them through a separate hidden-quest view. Quest progress and your tracked
 quest selection are preserved.
 
-**Startup hang reported in 0.1.0. Keep Quest Hider disabled during inventory
-probe testing.** Version 0.1.2 contains a native stack fix and startup mitigation with offline tests;
-it is not yet confirmed to resolve the failure in-game.
+**Experimental; journal and native filtering still need in-game validation.**
+The latest 0.1.2 log advances past the former startup stop into gameplay, but its
+Lua adapter disables itself because the game does not expose `math.floor`.
+The corrected 0.1.2 candidate removes that dependency from both key and quest ID
+validation. It uses the same DLL as the previous 0.1.2 candidate.
 
 The original failed log ends after the native renderer-install message during
 `minimap_win`. It does not prove which following operation blocked. The current
@@ -20,7 +22,8 @@ bridge self-test runs first and logs whether a value returns successfully to Lua
 without reading game objects or installing a patch. This separates a bridge
 failure from renderer initialization in the next log. Native DLL registration
 still happens when the framework loads DLLs. A native hang cannot be caught by
-Lua `pcall`; the startup hang is **not yet confirmed fixed in-game**.
+Lua `pcall`. The latest log does not reach the bridge self-test because of the
+earlier Lua error; its native and journal behavior remains unverified.
 
 To disable the mod, close the game and move **both** `mods/quest_hider.json` and
 `mods/quest_hider_native.dll` out of `mods`. Removing the JSON alone does not stop
@@ -45,8 +48,10 @@ All Quest Markers, and its renderer hook occupies a different code range.
 ```
 
 When testing the mitigation separately, replace the DLL, JSON, `config.lua` and
-`bootstrap.lua` together. The new Lua adapter requires the matching 0.1.2 DLL. Replacing only the Lua bootstrap leaves the old config
-loading order, and the adapter will disable itself. Keep your profile files.
+`bootstrap.lua` together if upgrading from an older version. If you already
+installed the complete 0.1.2 candidate, replace only
+`mods/QuestHider/bootstrap.lua` for the `math.floor` correction. The DLL and config
+have not changed. Keep your profile files.
 
 Close the game. Extract the ZIP into the folder containing `koa.exe`, merging
 `mods`, then restart. No console command is needed. Native filtering remains inactive until you first
