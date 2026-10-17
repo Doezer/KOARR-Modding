@@ -1,4 +1,4 @@
-"""Behavioral checks for the independent Quest Hider preview."""
+"""Behavioral checks for the independent Quest Hider mod."""
 import importlib.util
 import os
 from pathlib import Path
@@ -38,7 +38,7 @@ class QuestHiderTests(unittest.TestCase):
         self.assertIsNotNone(lua, 'Set QH_LUA to a Lua 5.1 interpreter')
         subprocess.run([lua, 'tests/quest_hider_startup.lua'], cwd=ROOT, check=True)
 
-    def test_preview_package(self):
+    def test_release_package(self):
         spec = importlib.util.spec_from_file_location('qh_package', ROOT / 'tools/package_quest_hider.py')
         package = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(package)

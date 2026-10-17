@@ -1,8 +1,20 @@
 # Quest Hider development
 
-This preview lives beside All Quest Markers. Its build, package, configuration and
+Quest Hider lives beside All Quest Markers. Its build, package, configuration and
 preferences are separate. Do not rebuild or overwrite the existing AllQuestMarkers
 release ZIP merely to update Quest Hider.
+
+## Version 1.0.0
+
+The user confirmed the corrected journal behavior, and the final log records two
+quests hidden and both restored through the hidden list. Version 1.0.0 removes
+routine bootstrap, bridge, initialization, profile and action logs. Actionable
+errors and the fallback key hint remain. Internal bridge checks, initialization
+ordering and preference error details remain active. Both DLL and bootstrap use
+the `QuestHider bridge 1.0.0` token. Preference format and keys are unchanged.
+
+The sections recording preview failures below are historical investigation notes;
+current installation and validation status are in `docs/quest-hider.md`.
 
 ## Linux build and checks
 
@@ -21,7 +33,7 @@ QH_LUA=/path/to/lua5.1 python -m unittest discover -s tests -v
 python tools/package_quest_hider.py
 ```
 
-The DLL is generated under ignored `build/`; only the preview ZIP contains the
+The DLL is generated under ignored `build/`; only the release ZIP contains the
 compiled helper. Neither build nor tests need game files. To run the optional x86
 hook emulator, install `pefile==2024.8.26` and `unicorn==2.1.4` in a development
 virtual environment, then run `python tests/quest_hider_hook.py`. It tests all

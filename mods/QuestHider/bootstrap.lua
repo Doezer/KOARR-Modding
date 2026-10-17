@@ -1,6 +1,6 @@
 -- Catch Lua startup errors before they escape the framework's unprotected call.
 local function bootstrap()
--- Quest Hider preview. Only journal display state and this mod's preferences change.
+-- Quest Hider. Only journal display state and this mod's preferences change.
 local G = _G
 local existing = rawget(G, "QuestHider")
 if existing and existing.enabled then existing.attach(); return existing end
@@ -9,7 +9,6 @@ local N = rawget(G, "QuestHiderNative")
 -- The framework loads config.lua first. Do not nest the game's asset loader
 -- inside a framework require callback or initialize native rendering at startup.
 local config = rawget(G, "QuestHiderConfig")
-log("Startup: configuration received; native initialization deferred until journal SHOW.")
 if type(N) ~= "table" then
     log("Native helper unavailable; no journal hooks installed.")
     return false
@@ -27,7 +26,7 @@ if type(config) ~= "table" or not valid_key(config.toggle_key) or not valid_key(
     or config.toggle_key == config.hidden_list_key or type(config.profile) ~= "string" then
     log("Invalid config; no journal hooks installed."); return false
 end
-local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="0.1.3-preview", native_ready=false, native_attempted=false}
+local S = {enabled=true, hidden_view=false, profile_ready=false, hooks={}, version="1.0.0", native_ready=false, native_attempted=false}
 G.QuestHider = S
 local function pack(...) return {n=select("#", ...), ...} end
 local function unpacked(t) return unpack(t, 1, t.n) end
@@ -83,7 +82,7 @@ local function capture_reminder(original, ...)
     end
     if not result[1] then error(result[2],0) end
     if captured then reminder=captured;update_hint()
-    else log("Journal reminder label unavailable; key hints remain in the log.") end
+    else log("Journal reminder label unavailable. " .. hint_text()) end
     return unpack(result,2,result.n)
 end
 local function quest_key(entry)
@@ -116,16 +115,12 @@ function S.ensure_native()
     if S.native_ready then return true end
     if S.native_attempted then return false end
     S.native_attempted=true
-    log("Bridge self-test: enter (journal opened).")
-    local bridge_ok,reply=pcall(N.self_test,"QuestHider bridge 0.1.3")
-    if not bridge_ok or reply~="QuestHider bridge 0.1.3" then
-        log("Bridge self-test failed; filtering disabled. Check that the DLL and Lua files are both 0.1.3.")
+    local bridge_ok,reply=pcall(N.self_test,"QuestHider bridge 1.0.0")
+    if not bridge_ok or reply~="QuestHider bridge 1.0.0" then
+        log("Bridge self-test failed; filtering disabled. Check that the DLL and Lua files are both 1.0.0.")
         return false
     end
-    log("Bridge self-test: returned expected value.")
-    log("Native initialize: enter (journal opened).")
     local ok,result=pcall(N.initialize,"QuestHider")
-    log("Native initialize: returned " .. (ok and (result and "success" or "disabled") or "Lua error") .. ".")
     S.native_ready=ok and not not result
     if not S.native_ready then log("Quest filtering disabled; original journal remains available.") end
     return S.native_ready
@@ -188,7 +183,6 @@ function S.toggle_selected()
         return false
     end
     refresh(qw)
-    log(was_hidden and "Quest restored." or "Quest hidden. F7 opens the hidden list.")
     return true
 end
 function S.toggle_view()
@@ -197,9 +191,6 @@ function S.toggle_view()
     if type(qw) ~= "table" then return false end
     S.hidden_view=not S.hidden_view
     refresh(qw)
-    local count=0
-    for _,entry in ipairs(entries(qw)) do if hidden(entry) then count=count+1 end end
-    log((S.hidden_view and "Hidden quests" or "Normal journal") .. " (" .. count .. " hidden). F6 hides/restores; F7 switches lists.")
     return true
 end
 local function attach_journal(qw)
@@ -261,7 +252,6 @@ local function attach_journal(qw)
                 S.sync_profile()
                 N.poll(tostring(config.toggle_key));N.poll(tostring(config.hidden_list_key))
             end
-            log("F6: hide/restore selected quest. F7: normal/hidden list.")
         end
         if event=="START_CLOSE" then restore_hint();S.hidden_view=false end
         local previous_scope=reminder_scope
@@ -311,7 +301,6 @@ function S.detach()
     return true
 end
 S.attach()
-log("Lua adapter ready; native initialization awaits journal SHOW. F6 hides/restores, F7 switches lists.")
 return S
 
 end

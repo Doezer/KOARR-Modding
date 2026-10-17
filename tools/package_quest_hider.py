@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Package the independent Quest Hider preview; never changes AllQuestMarkers artifacts."""
+"""Package the independent Quest Hider release; never changes AllQuestMarkers artifacts."""
 import argparse
 import hashlib
 from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.3-preview'
+VERSION = '1.0.0'
 PAYLOAD = {
     'mods/quest_hider_native.dll': 'build/quest_hider_native.dll',
     'mods/quest_hider.json': 'mods/quest_hider.json',

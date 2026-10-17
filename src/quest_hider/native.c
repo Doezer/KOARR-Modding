@@ -1,4 +1,4 @@
-/* Quest Hider preview: exact-build, read-only game inspection and display filtering. */
+/* Quest Hider: exact-build, read-only game inspection and display filtering. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <bcrypt.h>
@@ -130,7 +130,7 @@ static int open_profile(const char *name) {
         if(!qh_store_decode(&candidate,name,text)) {log_line("Invalid preference file; filtering remains disabled");return 0;}
     } else if(GetLastError()!=ERROR_FILE_NOT_FOUND)return 0;
     hidden_store=candidate;strcpy(profile_name,name);profile_player=player;profile_active=1;
-    log_line("Profile loaded (%u hidden quests)",(unsigned)hidden_store.count);return 1;
+    return 1;
 }
 static void rebuild_marker_cache(void) {
     uintptr_t owners[QH_MAX_HIDDEN],game,manager,flags,objects,groups;size_t owner_count=0,i;
@@ -182,7 +182,7 @@ static const char *arg(void *state,int index,int count) {
 static int api_self_test(void *state) {
     const char *s=arg(state,1,1);
     /* Exercise the same C-to-Lua return convention, without patching or game inspection. */
-    return s&&!strcmp(s,"QuestHider bridge 0.1.3")?1:0;
+    return s&&!strcmp(s,"QuestHider bridge 1.0.0")?1:0;
 }
 static int api_initialize(void *state) {
     static const unsigned char expected[]={0xf6,0x45,0x04,0x01,0x0f,0x85,0x0f,0x06,0x00,0x00};
@@ -195,7 +195,7 @@ static int api_initialize(void *state) {
     delta=(int32_t)((uintptr_t)&qh_render_hook-(VA(0x01006cfb)+5));memcpy(patch+1,&delta,4);
     qh_render_continue=(void*)VA(0x01006d05);qh_render_skip=(void*)VA(0x01007314);
     if(!patch_memory((void*)VA(0x01006cfb),patch,sizeof(patch)))return 0;
-    initialized=1;log_line("Exact-build renderer filter installed");return 1;
+    initialized=1;return 1;
 }
 static int api_profile(void *state) {const char *s=arg(state,1,1);return initialized&&s&&open_profile(s)?1:0;}
 static int api_suspend(void *state) {(void)state;profile_active=0;hidden_object_count=0;return 0;}
@@ -209,7 +209,7 @@ static int api_set(void *state) {
     if(strcmp(action,"hide")&&strcmp(action,"show"))return save_failed("Invalid hide/restore action",0);
     candidate=hidden_store;
     if(!qh_store_set(&candidate,key,!strcmp(action,"hide")))return save_failed("Hidden quest limit reached",0);
-    if(!save_store(&candidate)) {log_line("Preference save failed: %s",save_error);return 0;}
+    if(!save_store(&candidate))return 0;
     hidden_store=candidate;cache_dirty=1;return 1;
 }
 static int api_save_error(void *state) {
@@ -262,7 +262,7 @@ static void hook_framework_state(void) {
     memcpy(&old,call+1,4);previous_new_state=(void*)(call+5+old);
     if((uintptr_t)previous_new_state>=base && (uintptr_t)previous_new_state<base+0x173d000) {previous_new_state=NULL;return;}
     new_delta=(int32_t)((uintptr_t)&wrapped_new_state-(uintptr_t)(call+5));
-    if(patch_memory(call+1,&new_delta,4))log_line("Chained framework Lua registration hook");
+    if(!patch_memory(call+1,&new_delta,4))log_line("Could not install Lua registration hook; helper inactive");
 }
 __declspec(dllexport) int __cdecl luaopen_QuestHiderNative(void *state) {
     if(supported)register_library(state);return 0;
