@@ -20,6 +20,14 @@ class InventoryPlusTests(unittest.TestCase):
                             '-o', binary], cwd=ROOT, check=True)
             subprocess.run([binary], check=True)
 
+    def test_native_name_borrowing_and_invalid_items(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = str(Path(folder) / 'names-test')
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Wextra', '-Werror',
+                            '-Isrc/inventory_plus', 'tests/inventory_plus_names.c',
+                            '-o', binary], cwd=ROOT, check=True)
+            subprocess.run([binary], check=True)
+
     def test_native_dialog_guard_and_return_to_inventory(self):
         lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
         self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')

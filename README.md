@@ -6,7 +6,7 @@ A collection of independently installable mods. Pick the ZIP for the mod you wan
 | --- | --- | --- |
 | All Quest Markers on World Map | Confirmed working · 1.0.1 | [Nexus Mods](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97) · details below |
 | Quest Hider | 1.0.0 · journal hide/restore confirmed working | [Download and installation](docs/quest-hider.md) |
-| Inventory Plus | 0.2.0 preview · name search and sorting; tabs planned | [Download and focused test](docs/inventory/README.md) · [Specification](docs/inventory/spec.md) · [Research](docs/inventory/research.md) |
+| Inventory Plus | 0.2.1 preview · name search and sorting; tabs planned | [Download and focused test](docs/inventory/README.md) · [Specification](docs/inventory/spec.md) · [Research](docs/inventory/research.md) |
 
 Quest Hider adds **F6** to hide/restore a journal quest and **F7** to switch to the
 hidden list, with persistent preferences and objective map filtering. It has its

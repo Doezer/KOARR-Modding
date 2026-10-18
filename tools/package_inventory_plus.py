@@ -6,7 +6,7 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.2.0-preview'
+VERSION = '0.2.1-preview'
 PAYLOAD = {
     'mods/inventory_plus_native.dll': 'build/inventory_plus_native.dll',
     'mods/inventory_plus.json': 'mods/inventory_plus.json',
@@ -23,7 +23,7 @@ def build(output):
     archive = output / f'InventoryPlus-{VERSION}.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as z:
         for name, source in sorted(PAYLOAD.items()):
-            entry = zipfile.ZipInfo(name, date_time=(2026, 10, 17, 0, 0, 0))
+            entry = zipfile.ZipInfo(name, date_time=(2026, 10, 18, 0, 0, 0))
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.create_system = 3
             entry.external_attr = 0o100644 << 16

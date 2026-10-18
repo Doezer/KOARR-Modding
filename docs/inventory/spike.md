@@ -1,6 +1,6 @@
 # Inventory Plus — technical spike findings
 
-Updated 17 October 2026. Current build: **0.2.0 search/sort preview**. The user
+Updated 18 October 2026. Current build: **0.2.1 name-reader correction preview**. The user
 confirmed the native input trial; projected rows need the next game check.
 This is the implementation record for the
 [specification's feasibility gates](spec.md#technical-approach-and-feasibility-gates).
@@ -200,3 +200,38 @@ The current [preview and test](README.md) replaces the UI trial as the next game
 build. Direct tabs/clickable controls, a combined All view and metadata filters
 remain unimplemented. The model and mock tests do not validate real getter text,
 projected selection/actions, Windows lowercase or layout in the user's process.
+
+
+## Inventory-name correction (18 October)
+
+The target 0.2.0 test accepted queries and cleared correctly, but all queries
+matched 0/48 items and sorting appeared unchanged. The actor display-name API
+signature was valid; its semantics were unsuitable for inventory names. The
+previous assumption above is superseded by the native label path traced here.
+
+`set_ribbon_name` formats its item-handle argument via `WINDOW`'s formatter.
+The shared variant-to-text routine at preferred VA `0x00ECDC20` decodes an actor,
+checks its inventory flag and copies `actor::name(false)` at `0x00EF3B20`.
+That reader selects the stored custom name when present, otherwise the normal
+stored name. `ACTOR.get_actor_display_name` instead uses a different fallback
+through `0x00E533A0` and cannot substitute for that path.
+
+0.2.1 adds `InventoryPlusNative.item_name(handle)`: the engine's own handle
+decoder (`0x00E5F770`), actor lookup (`0x00F23C10`) and inventory name reader.
+It checks executable identity and all new function fingerprints, checks the
+inventory flag, borrows text only until `lua_pushstring` copies it and performs
+no item writes. Lua still checks `ACTOR.is_valid` first. Missing/empty names
+restore the native view through the existing projection failure path. The new
+bridge token rejects mixed DLL/Lua versions. A deferred lowercase sentinel check
+also rejects a broken normalization bridge before applying a view.
+
+Four optional real-engine emulation cases execute the actual decoder, lookup
+and name-selection functions at preferred and relocated bases, including custom
+names. Host C checks cover invalid actors, missing/empty names and borrowed text;
+Lua integration deliberately makes the old display-name API throw. All 21 tests
+pass. These checks do not confirm live game matching, sorting or localization;
+the focused game retest remains required.
+
+```sh
+PYTHONPATH=/path/to/pefile-and-unicorn python tools/verify_inventory_plus_names.py /private/path/koa.exe
+```

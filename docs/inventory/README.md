@@ -1,4 +1,4 @@
-# Inventory Plus — search and name sorting, 0.2.0 preview
+# Inventory Plus — search and name sorting, 0.2.1 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -8,8 +8,8 @@ This is a functional preview, not the complete redesigned inventory. Direct
 category tabs, clickable search/sort controls, an All view, rarity/type filters
 and additional columns remain planned.
 
-[Download 0.2.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.2.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.2.0-preview.zip.sha256)
+[Download 0.2.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.2.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.2.1-preview.zip.sha256)
 
 ## Installation
 
@@ -19,8 +19,8 @@ identity, Lua API fingerprints and the framework registration hook. Other builds
 are disabled. Quest Hider and All Quest Markers are optional and unchanged.
 
 Close the game and extract the complete ZIP beside `koa.exe`, merging `mods`.
-When upgrading from the input trial, replace the DLL **and JSON**, and add both
-Lua files. Keep the old export probe disabled. `ui_trial.lua` from 0.1.0 is no
+When upgrading, replace the DLL **and both Lua files**, as well as the JSON.
+The 0.2.0 helper cannot run the corrected 0.2.1 adapter. Keep the old export probe disabled. `ui_trial.lua` from 0.1.0 is no
 longer referenced and can be removed.
 
 ```text
@@ -61,7 +61,8 @@ native. Full controller-only search is not claimed.
 
 ## Matching and item behavior
 
-Search uses literal substrings of the actor's display name. Windows invariant
+Search uses literal substrings of the item's displayed inventory name, including
+custom names. The helper reads the same stored name as the native label formatter. Windows invariant
 Unicode lowercase handles case; accents remain significant. This does not
 promise every language's full case-folding equivalences or locale-specific sort
 order. Name sorting compares the lowercase UTF-8 names, retaining native order
@@ -88,6 +89,13 @@ The mod does not add automated item actions, capacity changes or save edits.
 The user confirmed the 0.1.0 dialog opens, typing leaves items untouched, both
 confirmation and cancellation return cleanly, and the hint appears. The supplied
 screenshot exposed an overlong footer, which is shortened in this build.
+
+The 0.2.0 game test revealed that its actor display-name getter was unsuitable:
+search matched none of 48 items and sorting appeared unchanged. 0.2.1 replaces
+that getter with the inventory formatter's name reader. Four real-engine
+emulation cases verify typed handles, actor lookup and custom/base-name selection
+at two image bases. The updated DLL builds and 21 offline tests pass. The fix
+still needs an in-game retest.
 
 Offline checks cover native-handle routing after filtering/sorting, duplicate
 names, stacks, collapsed groups and header counts, empty results, removed items,

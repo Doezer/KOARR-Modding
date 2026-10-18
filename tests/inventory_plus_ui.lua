@@ -4,7 +4,7 @@ loadfile=function()error('No nested asset loading at startup')end
 package.loadlib=function()error('No nested native loading')end
 local fired,idle,launch_fail={},true,false
 local logs={};print=function(s)logs[#logs+1]=s end
-InventoryPlusNative={self_test=function(s)return s end,
+InventoryPlusNative={item_name=function()error("No inventory yet")end,self_test=function(s)return s end,
  poll=function(s)local v=fired[s];fired[s]=nil;return v and s or nil end,
  idle=function(s)return idle and s or nil end,fold=string.lower}
 local original_updates,actions,ledger_actions,launches=0,{},0,0
@@ -29,7 +29,9 @@ local rows={{header_id='Weapon',header_text=100,len=3},{item_id=10,stack=2},{ite
  {header_id='Potions',header_text=200,len=1},{item_id=40}}
 local valid={[10]=true,[20]=true,[30]=true,[40]=true}
 local names={[10]='Frost Sword',[20]='Shine',[30]='Frost Sword',[40]='Healing Potion'}
-ACTOR={is_valid=function(id)return valid[id]end,get_actor_display_name=function(id)return names[id]end}
+ACTOR={is_valid=function(id)return valid[id]end,
+ get_actor_display_name=function()error('Actor display names are not inventory names')end}
+InventoryPlusNative.item_name=function(id)return names[id]end
 I.m_list={selected=3,get_selected=function(self)return self.selected end,
  set_selected=function(self,index)self.selected=index end}
 I.get_selected_item=function(header)
@@ -157,5 +159,8 @@ I.on_window_event('HIDE');assert(footer.text=='Localized 123')
 S.detach();assert(ledger_win.set_reminder==original_reminder and not S.enabled)
 InventoryPlusNative.self_test=function()return 'wrong bridge'end
 S=dofile('mods/InventoryPlus/inventory_plus.lua');assert(not S.open_search() and not S.editing and not S.cycle_sort());S.detach()
+InventoryPlusNative.self_test=function(s)return s end
+InventoryPlusNative.fold=function(s)return s end
+S=dofile('mods/InventoryPlus/inventory_plus.lua');assert(not S.open_search() and not S.cycle_sort());S.detach()
 InventoryPlusNative=nil
 assert(dofile('mods/InventoryPlus/inventory_plus.lua')==false)

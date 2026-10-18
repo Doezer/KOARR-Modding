@@ -1,16 +1,16 @@
--- Inventory Plus 0.2.0: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.2.1: native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
 if previous and previous.enabled then previous.attach();return previous end
 local function log(message)print('[InventoryPlus] '..message)end
 local N=rawget(G,'InventoryPlusNative')
-if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function' or type(N.idle)~='function' or type(N.fold)~='function' then
- log('Keyboard helper unavailable; no inventory changes installed.');return false
+if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function' or type(N.idle)~='function' or type(N.fold)~='function' or type(N.item_name)~='function' then
+ log('Native inventory helper unavailable; no inventory changes installed.');return false
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.2.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.2.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local function pack(...)return {n=select('#',...),...}end
 local function returns(t)return unpack(t,1,t.n)end
@@ -69,9 +69,14 @@ local function available()
 end
 local function ensure_bridge()
  if S.ready then return true end
- local ok,reply=pcall(N.self_test,'InventoryPlus 0.2.0')
- if not ok or reply~='InventoryPlus 0.2.0'then
-  if not S.bridge_warning then log('Native version mismatch; replace the complete 0.2.0 package.');S.bridge_warning=true end
+ local ok,reply=pcall(N.self_test,'InventoryPlus 0.2.1')
+ if not ok or reply~='InventoryPlus 0.2.1'then
+  if not S.bridge_warning then log('Native version mismatch; replace the complete 0.2.1 package.');S.bridge_warning=true end
+  return false
+ end
+ local folded,normalized=pcall(N.fold,'InVeNtOrY PlUs')
+ if not folded or normalized~='inventory plus'then
+  if not S.bridge_warning then log('Native text normalization failed; search/sort left disabled.');S.bridge_warning=true end
   return false
  end
  S.ready=true;return true
@@ -95,9 +100,9 @@ end
 local function active()return S.query~='' or S.order~='native'end
 local function item_name(handle)
  local A=rawget(G,'ACTOR')
- assert(type(A)=='table' and type(A.is_valid)=='function' and type(A.get_actor_display_name)=='function','Item-name API unavailable')
+ assert(type(A)=='table' and type(A.is_valid)=='function','Item-name API unavailable')
  assert(A.is_valid(handle),'Stale item handle')
- return A.get_actor_display_name(handle)
+ return N.item_name(handle)
 end
 function S.refresh()
  local I=rawget(G,'inventory_win')
