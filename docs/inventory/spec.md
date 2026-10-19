@@ -1,10 +1,9 @@
 # Inventory Plus — proposed specification
 
-**Status:** the user confirmed native text input and cancellation in the first UI
-trial. The [0.2.0 preview](README.md) implements category-scoped name search and
-grouped name sorting, with compact hints and keyboard controls. Projected rows
-and native actions need the next target-game check. Direct/clickable tabs and the
-other features below remain targets, not claims of completed behavior.
+**Status:** the user confirmed search, name sorting and clearing in 0.2.1.
+The [0.3.0 preview](README.md) adds six category tabs and Ctrl+1–6 navigation;
+its layout and native transitions need the next in-game check. Additional stat
+sorting is specified below and remains pending reader verification.
 Working name: **Inventory Plus**.
 Target: GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, in this same
 repository with its own files and eventual ZIP.
@@ -64,7 +63,7 @@ names and tooltips; no tiny-font mode is required to use the mod.
 | P0 | Explicit name sort and Reset/Clear Filters | Stable ordering, visible sort direction and reversible filtering |
 | P1 | All view across non-junk categories | Mixed-category row/action routing proven; otherwise absent from the first preview and explicitly documented |
 | P1 | Type/slot, rarity and equippable filters | Each property's meaning and reader verified on the target build |
-| P1 | Rarity, required-level and base-value sort | Verified typed properties; unsupported options omitted and documented |
+| P1 | Damage, armor rating, rarity, required-level and base-value sort | Verified typed properties; unsupported options omitted and documented |
 | Later | Favorites tab and persistent item tags | Stable instance identity across save/load, stack split/merge and characters |
 | Later | Protection from sale/junk/salvage, bulk marking | Complete action-path audit; a star alone cannot imply protection |
 | Later | Stash and vendor browsing | Separate native contexts and transaction rules verified |
@@ -120,6 +119,32 @@ A zero-result tab is still selectable.
 Provide a dropdown and, where feasible, clickable column headers. Selecting the
 active sort again reverses direction. Default is Name A–Z. Keep the native rarity
 ordering in rarity sorts; required level and generated item level are distinct.
+
+The intended sort menu is:
+
+| Sort | Scope | Meaning |
+| --- | --- | --- |
+| Name A–Z / Z–A | Every category | Displayed localized item name |
+| Damage high–low / low–high | Weapons | Same weapon damage rating shown by the native item card |
+| Armor high–low / low–high | Armor | Same armor rating shown by the native item card |
+| Rarity high–low / low–high | Gear with a verified native rarity | Native tier order, including set items |
+| Required level high–low / low–high | Items with a requirement | Actual required character level, distinct from generated item level |
+| Value high–low / low–high | Items with a verified value | Native base value, not an estimated merchant price |
+| Native order | Every category | Original game ordering |
+
+Damage sorting is an explicit requested feature. It is not a derived DPS,
+critical-hit, damage-over-time or build-optimization score. Verify the displayed
+rating's reader, arguments, rounding and scaling before enabling it. Do not add
+numbers extracted from localized tooltips or treat unrelated item damage fields
+as interchangeable. Keep native subcategory groups in the first stat-sort
+preview, so a weapon sort compares within weapon types. Document compatibility
+with ItemScaling and other stat-changing mods after an actual comparison.
+
+Only applicable, verified sorts appear in the menu. A category change resets an
+inapplicable stat sort to name order and updates its label; it never applies
+weapon damage to potions. Mixed All-view stat sorting requires a separate
+explicit policy and is deferred. These options are targets: 0.3.0 still offers
+native order and the two name directions only.
 
 Name is the secondary key for non-name sorts. Original snapshot ordinal is the
 final stable tie-breaker. Unknown values display an em dash and sort after known
@@ -297,5 +322,6 @@ Lua test cannot establish those properties.
 4. Reassess favorites, protection and stash/vendor views from actual use and
    remaining technical evidence.
 
-This specification completes the research/design step. The next coding task is
-the bounded technical spike, not the full overhaul in one unverified patch.
+The current implementation and remaining verification work are tracked in the
+[spike notes](spike.md). Each preview must distinguish confirmed game behavior
+from new functionality awaiting its target-game check.

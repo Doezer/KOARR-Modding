@@ -1,6 +1,6 @@
 # Inventory Plus — technical spike findings
 
-Updated 18 October 2026. Current build: **0.2.1 name-reader correction preview**. The user
+Updated 18 October 2026. Current build: **0.3.0 category-tab preview**. The user
 confirmed the native input trial; projected rows need the next game check.
 This is the implementation record for the
 [specification's feasibility gates](spec.md#technical-approach-and-feasibility-gates).
@@ -235,3 +235,52 @@ the focused game retest remains required.
 ```sh
 PYTHONPATH=/path/to/pefile-and-unicorn python tools/verify_inventory_plus_names.py /private/path/koa.exe
 ```
+
+
+## Search gate passed; native category tabs (18 October)
+
+The user confirmed search, sorting and clearing work in 0.2.1. A missing log does
+not invalidate that direct in-game result. 0.3.0 keeps that row model and name
+reader and adds `navigation.lua`, framework-loaded before the adapter.
+
+The existing `get_button_tree_info` provides six category branches. Weapons has
+primary/secondary leaves; the other five are direct leaves. The tab targets are
+2627341 (Weapons primary; secondary 2010694 remains selected when already active),
+1070770 (Armor), 6689260 (Accessories), 7304644 (Consumables), 911336 (Items), and
+607556 (Junk). The native `ledger_win.launch_into_button(id)` one-argument call
+is present in its original window and input handlers. Tabs call that transition,
+not just the inventory callback or a direct `m_selected_slot` assignment. Native
+disabled flags, including the weapon parent and inventory root, are respected.
+
+Controls reuse `INVENTORY_HEADER` through the same `WINDOW.create_window` and
+`find_static_type(...,1221325,679773,-1,true)` contract as native headers. This
+requires no proprietary assets in the package. Header ancestors and labels are
+resized to keep the click area within each tab. They occupy two columns and
+three rows over the list panel (96 native UI units); the list wrapper is moved
+and shortened accordingly. This layout gives the longer labels room. The active
+tab is bracketed; captions are English. Owned button events are consumed before
+the native list handler can interpret their duplicated template IDs as rows.
+Ctrl+1–6 uses the same focus/modifier/edge helper as Ctrl+F/S.
+
+Tabs are created only after inventory initialization. Modal text entry, dragging,
+tutorials and compare/confirmation contexts cannot activate them. Native window
+HIDE/SHOW events during category transitions retain the query. A pending guard
+handles delayed transitions, blocks item input until the destination is active,
+and times out after 180 inventory updates if it cannot complete. Creation errors
+remove partial controls and restore the original list geometry. Close/detach
+restores the layout, and unchanged tabs do not rewrite labels every frame.
+
+22 offline tests cover the existing features plus tab routing, active captions,
+owned hit testing, query/sort preservation, delayed transitions/timeouts, native
+disabled flags, modal guards and partial creation rollback. UI wrappers for move
+and resize were statically checked as three-argument calls. Actual header click
+events, label clipping, native transitions and layout remain unconfirmed until
+the next game test. New controller tab focus is not implemented; native
+controller navigation remains available.
+
+Additional requested stat sorting is now explicit in the specification. The
+executable has both TYPE and ACTOR weapon-damage/armor readers. In particular,
+ACTOR's weapon damage and armor wrappers take three arguments, not just an item
+handle (`0x00E8BF90` and `0x00E8C2D0` respectively). Their native card call sites
+and parameter meanings must be verified before choosing a damage metric. No
+numeric stat sort is exposed by this tab preview.

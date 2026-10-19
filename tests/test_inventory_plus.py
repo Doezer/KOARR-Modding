@@ -33,6 +33,11 @@ class InventoryPlusTests(unittest.TestCase):
         self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')
         subprocess.run([lua, 'tests/inventory_plus_ui.lua'], cwd=ROOT, check=True)
 
+    def test_native_category_tabs(self):
+        lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
+        self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')
+        subprocess.run([lua, 'tests/inventory_plus_tabs.lua'], cwd=ROOT, check=True)
+
     def test_handle_preserving_view_model(self):
         lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
         self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')
@@ -55,4 +60,4 @@ class InventoryPlusTests(unittest.TestCase):
                 for trigger in ('inventory_win', 'name_win', 'ledger_win'):
                     paths = [entry['path'].replace('\\', '/').split('/')[-1]
                              for entry in scripts if entry['trigger'] == trigger]
-                    self.assertEqual(paths, ['model.lua', 'inventory_plus.lua'])
+                    self.assertEqual(paths, ['model.lua', 'navigation.lua', 'inventory_plus.lua'])

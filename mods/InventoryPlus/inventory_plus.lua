@@ -1,4 +1,4 @@
--- Inventory Plus 0.2.1: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.3.0: native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,8 +10,16 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.2.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.3.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
+local navigation=rawget(G,'InventoryPlusNavigation')
+local tabs=type(navigation)=='table' and navigation.create(S,log)or nil
+local function update_tabs()
+ if tabs then
+  local ok,err=pcall(tabs.update)
+  if not ok then tabs.detach();tabs.failed=true;log('Tabs disabled: '..tostring(err))end
+ end
+end
 local function pack(...)return {n=select('#',...),...}end
 local function returns(t)return unpack(t,1,t.n)end
 local function wrap(module,name,make)
@@ -29,10 +37,14 @@ local function hint()
   local text=S.matched==0 and 'No matches' or M.short(S.query,6)
   return text..' '..tostring(S.matched)..'/'..tostring(S.total)..(sort~='' and ' '..sort or '')..' | Esc: Clear'
  end
- return sort~='' and (sort..' | Ctrl+F: Find | Ctrl+S') or 'Ctrl+F: Find | Ctrl+S: Sort'
+ if sort~=''then return sort..' | Ctrl+F: Find | Ctrl+S'end
+ return tabs and #tabs.windows>0 and 'Ctrl+1–6 Tabs | Ctrl+F/S Find/Sort' or 'Ctrl+F: Find | Ctrl+S: Sort'
 end
 local function update_hint()
- if reminder and S.enabled then reminder.write(reminder.label,hint())end
+ if reminder and S.enabled then
+  local text=hint()
+  if reminder.last_text~=text then reminder.write(reminder.label,text);reminder.last_text=text end
+ end
 end
 local function restore_hint()
  if reminder then local old=reminder;reminder=nil;old.setter(returns(old.args))end
@@ -69,9 +81,9 @@ local function available()
 end
 local function ensure_bridge()
  if S.ready then return true end
- local ok,reply=pcall(N.self_test,'InventoryPlus 0.2.1')
- if not ok or reply~='InventoryPlus 0.2.1'then
-  if not S.bridge_warning then log('Native version mismatch; replace the complete 0.2.1 package.');S.bridge_warning=true end
+ local ok,reply=pcall(N.self_test,'InventoryPlus 0.3.0')
+ if not ok or reply~='InventoryPlus 0.3.0'then
+  if not S.bridge_warning then log('Native version mismatch; replace the complete 0.3.0 package.');S.bridge_warning=true end
   return false
  end
  local folded,normalized=pcall(N.fold,'InVeNtOrY PlUs')
@@ -138,19 +150,22 @@ function S.cycle_sort()
  return S.refresh()
 end
 local function shortcuts(action)
- if not available()then return false end
+ if not available() or S.switching then return false end
  local menu=rawget(G,'menu_tools')
  if type(menu)=='table' and type(menu.is_dragging)=='function' and menu.is_dragging()then return false end
  if S.query~='' and type(action)=='string'then
   local key=string.lower(action)
   if key=='b' or key=='exiting' or key=='exitingshortcut'then S.back_guard=true;S.clear_search();return true end
  end
+ if tabs then
+  for index=1,6 do if N.poll('Ctrl+'..tostring(index))then tabs.select(index);return true end end
+ end
  if N.poll('Ctrl+F')then S.open_search();return true end
  if N.poll('Ctrl+S')then S.cycle_sort();return true end
  return false
 end
 function S.open_search()
- if not available() or S.editing or S.back_guard then return false end
+ if not available() or S.editing or S.back_guard or S.switching then return false end
  local name=rawget(G,'name_win')
  if type(name)~='table' or type(name.launch)~='function' or name.m_inited then return false end
  local tutorial=rawget(G,'tutorial_win')
@@ -257,24 +272,26 @@ function S.attach()
  end end)
  wrap(I,'on_window_event',function(original)return function(event,...)
   if S.enabled and (event=='HIDE' or event=='START_CLOSE')then
-   restore_hint();if not S.editing then S.query='';restore_categories()end
+   restore_hint();if tabs then tabs.close()end;if not S.editing and not S.switching then S.query='';restore_categories()end
   end
-  if S.enabled and event=='SHOW' and not S.editing then S.query='';restore_categories()end
-  if S.enabled and event=='SHOW' then N.poll('Ctrl+F');N.poll('Ctrl+S')end
+  if S.enabled and event=='SHOW' and not S.editing and not S.switching then S.query='';restore_categories()end
+  if S.enabled and event=='SHOW' then
+   N.poll('Ctrl+F');N.poll('Ctrl+S');for index=1,6 do N.poll('Ctrl+'..tostring(index))end
+  end
   return original(event,...)
  end end)
  -- Block the ledger's action dispatch before it reaches the native button tree.
  -- name_win's own modal handlers stay active for text, confirmation and cancel.
  wrap(rawget(G,'ledger_win'),'on_inputdeviceaction_event',function(original)return function(window,action,...)
-  if S.enabled and (S.editing or S.back_guard)then return end
+  if S.enabled and (S.editing or S.back_guard or S.switching)then return end
   if shortcuts(action)then return end
   return original(window,action,...)
  end end)
  wrap(I,'handle_input',function(original)return function(input,...)
-  if not S.editing and not S.back_guard and shortcuts(type(input)=='table' and input.info)then
+  if not S.editing and not S.back_guard and not S.switching and shortcuts(type(input)=='table' and input.info)then
    if type(input)=='table'then input.handled=true end;return
   end
-  if S.enabled and (S.editing or S.back_guard)then if type(input)=='table'then input.handled=true end;return end
+  if S.enabled and (S.editing or S.back_guard or S.switching)then if type(input)=='table'then input.handled=true end;return end
   return original(input,...)
  end end)
  for _,name in ipairs({'on_button_event_selection','on_mouse_event_scroll','on_mouse_event_tooltip',
@@ -283,12 +300,13 @@ function S.attach()
   'confirm_destroy_selected_item','confirm_destroy_junk'})do
   local action_name=name
   wrap(I,name,function(original)return function(...)
-   if S.enabled and (S.editing or S.back_guard)then return end
+   if S.enabled and (S.editing or S.back_guard or S.switching)then return end
    if S.enabled and S.query~='' and action_name=='confirm_destroy_junk'then
     log('Clear search before destroying all junk.');return
    end
    if S.enabled and active() and (action_name=='equip_selected' or action_name=='unequip_selected' or action_name=='destroy_selected_item')
     and type(I.get_selected_item)=='function' and I.get_selected_item()==nil then return end
+   if S.enabled and tabs and action_name=='on_button_event_selection' and tabs.event(...)then return end
    return original(...)
   end end)
  end
@@ -311,15 +329,16 @@ function S.attach()
   end
   if S.enabled and S.editing then return end
   local result=pack(original(...))
-  shortcuts()
+  shortcuts();update_tabs();update_hint()
   return returns(result)
  end end)
- if not S.announced then S.announced=true;log('Search preview ready. Ctrl+F: find; Ctrl+S: name sort; Esc: clear search.')end
+ if not S.announced then S.announced=true;log('Inventory preview ready. Ctrl+1–6: categories; Ctrl+F: find; Ctrl+S: name sort; Esc: clear search.')end
 end
 function S.detach()
  S.enabled=false
  local name=rawget(G,'name_win')
  if S.editing and type(name)=='table' and name.m_callback==S.callback and name.m_inited and type(name.cancel_name)=='function'then pcall(name.cancel_name)end
+ if tabs then tabs.detach()end
  S.editing=false;S.closing=false;S.back_guard=false;S.callback=nil;S.pending_query=nil;S.query='';S.order='native';restore_categories();restore_hint()
  local I=rawget(G,'inventory_win')
  if type(I)=='table'and I.m_inited and I.m_list and type(I.rebuild_list_win)=='function'then pcall(I.rebuild_list_win)end

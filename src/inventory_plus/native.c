@@ -28,11 +28,11 @@ static int focused(void) {
 static int down(int code) {return (GetAsyncKeyState(code)&0x8000)!=0;}
 static const char *argument(void *state) {return gettop(state)==1?getstring(state,1):NULL;}
 static int api_self_test(void *state) {
-    const char *s=argument(state);return s&&!strcmp(s,"InventoryPlus 0.2.1")?1:0;
+    const char *s=argument(state);return s&&!strcmp(s,"InventoryPlus 0.3.0")?1:0;
 }
 static int api_poll(void *state) {
     const char *s=argument(state);int key;
-    if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||(s[5]!='F'&&s[5]!='S'))return 0;
+    if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||(s[5]!='F'&&s[5]!='S'&&(s[5]<'1'||s[5]>'6')))return 0;
     key=(unsigned char)s[5];
     return ip_search_pressed(&shortcuts[key],focused(),down(VK_CONTROL),down(key),
                              down(VK_MENU)||down(VK_LWIN)||down(VK_RWIN),down(VK_SHIFT));

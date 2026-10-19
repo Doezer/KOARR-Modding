@@ -6,10 +6,11 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.2.1-preview'
+VERSION = '0.3.0-preview'
 PAYLOAD = {
     'mods/inventory_plus_native.dll': 'build/inventory_plus_native.dll',
     'mods/inventory_plus.json': 'mods/inventory_plus.json',
+    'mods/InventoryPlus/navigation.lua': 'mods/InventoryPlus/navigation.lua',
     'mods/InventoryPlus/model.lua': 'mods/InventoryPlus/model.lua',
     'mods/InventoryPlus/inventory_plus.lua': 'mods/InventoryPlus/inventory_plus.lua',
     'README.md': 'docs/inventory/README.md',

@@ -142,6 +142,16 @@ S.set_query('frost');I.m_list.selected=3
 I.force_native_selection=2;I.m_selected_slot=456;I.button_tree_callback('enter',456)
 assert(I.get_selected_item()==10)
 I.force_native_selection=nil;S.clear_search()
+-- Native category transitions may hide/show the inventory while animating.
+assert(S.set_query('frost'))
+S.switching=true
+I.on_window_event('HIDE');assert(S.query=='frost')
+I.on_window_event('SHOW');assert(S.query=='frost')
+before=#actions
+I.handle_input({info='a'});I.equip_selected();ledger_win.on_inputdeviceaction_event(nil,'a')
+assert(#actions==before)
+assert(not S.open_search())
+S.switching=false;S.clear_search()
 -- Keyboard guard also covers dispatch directly to the inventory.
 local input={info='a'};before=#actions;fired['Ctrl+F']=true;I.handle_input(input)
 assert(S.editing and input.handled and #actions==before)
