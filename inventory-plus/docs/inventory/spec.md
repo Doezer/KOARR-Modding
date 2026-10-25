@@ -1,10 +1,9 @@
 # Inventory Plus — proposed specification
 
-**Status:** search, name sorting and clearing were confirmed in 0.2.1. The 0.3.0
-tab preview failed in-game (overlapping category controls, empty transitions and
-blocked Back) and is withdrawn. The [0.3.1 recovery](../../README.md) restores native
-category navigation. Tabs and stat sorting remain targets, pending verified
-native navigation/card contracts and an in-game check.
+**Status:** search and name sorting work in-game. The failed 0.3.0 tabs were
+withdrawn; 0.4.0 rebuilds navigation using the traversal methods captured by the
+0.1.2 probe. Its controls and native transitions await in-game testing. Stat
+sorting remains pending native reader verification.
 Working name: **Inventory Plus**.
 Target: GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, in this same
 repository with its own files and eventual ZIP.

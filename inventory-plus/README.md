@@ -1,27 +1,25 @@
-# Inventory Plus — search and name sorting, 0.3.2 preview
+# Inventory Plus — search and name sorting, 0.4.0 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
 without changing their order or merging their item contexts.
 
-**0.3.2 footer correction:** restores the shortcut hint after late native footer
-updates when entering an item category. The user confirmed search/sort still work
-in 0.3.1 and that only its entry hint is missing. This is a Lua-only change; the
-native bridge remains 0.3.1. Its in-game footer behavior needs confirmation.
+**0.4.0 category-button preview:** six clickable tabs appear above the item list
+in two columns and three rows. Click a tab or press Ctrl+1–6 to switch categories.
+They appear only inside an item category, not on the original landing menu.
+Brackets identify the active category; captions are English in this preview.
 
-**0.3.1 recovery:** withdraws the broken 0.3.0 category tabs and restores the
-search/name-sort implementation confirmed working in 0.2.1. The tab preview
-created controls over the category landing menu and attempted an invalid leaf
-transition through the ledger. Its transition guard could block Back. This build
-creates no category controls, makes no category jumps and has no transition guard.
-Use the game's original category navigation. Tabs and stat sorting remain planned.
+Navigation now uses the native tree's normal parent/child transitions, including
+its loading callbacks. Search and sort are retained. Back cancels a pending
+switch; there is no blanket input guard. Native controller navigation remains
+available, but focus on the added buttons is not implemented.
 
-This is a functional preview, not the complete redesigned inventory. Direct
-category tabs, clickable search/sort controls, an All view, rarity/type filters
-and additional columns remain planned.
+The 0.3.0 direct-jump implementation is not reused. 22 offline tests pass, but
+this replacement needs an in-game test. Damage/stat sorting, an All view and
+clickable search/sort controls remain planned.
 
-[Download 0.3.2 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.2-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.2-preview.zip.sha256)
+[Download 0.4.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.0-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.0-preview.zip.sha256)
 
 ## Installation
 
@@ -31,11 +29,10 @@ identity, Lua API fingerprints and the framework registration hook. Other builds
 are disabled. Quest Hider and All Quest Markers are optional and unchanged.
 
 Close the game and extract the complete ZIP beside `koa.exe`, merging `mods`.
-When upgrading, replace the DLL, both Lua files and the JSON together.
-If you installed 0.3.0, remove `mods/InventoryPlus/navigation.lua`; it is no longer
-referenced by the manifest. Restart the game completely to clear its existing
-controls and transition state. A Lua reload cannot repair that running session. Keep the old export probe disabled.
-`ui_trial.lua` from 0.1.0 is no longer referenced and can be removed.
+When upgrading, replace the complete ZIP, including the DLL, JSON and the new
+`mods/InventoryPlus/navigation.lua`. The 0.4.0 adapter requires the matched 0.4.0
+DLL. Restart the game completely. Remove `mods/inventory_plus_probe.json` after
+the diagnostic run; the working mod does not require it.
 
 ```text
 mods/
@@ -43,6 +40,7 @@ mods/
 ├── inventory_plus_native.dll
 └── InventoryPlus/
     ├── model.lua
+    ├── navigation.lua
     └── inventory_plus.lua
 ```
 
@@ -51,6 +49,7 @@ adapter; no nested asset loader is used during startup.
 
 ## Controls
 
+- **Click tabs / Ctrl+1–6:** switch categories while browsing an item list.
 - **Ctrl+F:** open the native search dialog. Confirm to apply a name filter.
 - **Ctrl+S:** cycle native order → Name A–Z → Name Z–A → native order.
 - **Escape / native Back action:** clear an active search first. A further press
@@ -122,19 +121,20 @@ locale, resolution or other UI mod has been tested in-game.
 
 ## Focused game test
 
-1. After a full restart, check the original category buttons do not overlap any
-   new controls. Enter a category and return with Back; close/reopen inventory.
-2. Open a category with several items. Search for part of a visible item's name,
-   such as **staff**. Check only matching items remain and counts look correct.
-3. Press Escape to clear. Try a query with no matches and clear it again.
-4. Press Ctrl+S to try both name directions. Select each of two same-named items,
-   if available, and check its native details correspond to the selected item.
-5. Check the normal action you want to use acts on that selected item, then clear
-   search and return to native sort. Confirm the compact hint is readable.
+1. Open inventory: the original landing menu should have no overlapping tabs.
+2. Enter Primary Weapon. Six tabs should appear above the list. Click Armor,
+   Accessories and Weapons, checking the correct items and native actions appear.
+3. Try Ctrl+1–6 and Back. Back must work during or after a category switch.
+4. Search for an item-name fragment, switch categories and check the query is
+   retained. Clear with Escape and try name sorting again.
+5. Close and reopen inventory; check there are no leftover or duplicated controls.
 
+A screenshot and the framework log will help check this new layout. The
+[0.3.2 search/sort-only build](https://raw.githubusercontent.com/Doezer/KOARR-Modding/44a118a/inventory-plus/dist/InventoryPlus-0.3.2-preview.zip)
+remains available for rollback.
 Send the framework log and report any wrong names, counts, details or input
 behavior. No new export run is needed. Search and sorting are category-scoped;
-this build does not navigate between categories for you.
+the new buttons change the native category without merging item contexts.
 
 ## Removal and development
 

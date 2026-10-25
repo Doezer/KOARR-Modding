@@ -336,3 +336,41 @@ exports establish top-level launch calls but not leaf traversal, so another
 button build must wait for these real contracts instead of repeating the failed
 launch_into_button(leaf) assumption. No tab clicks or category mutations are
 introduced by this diagnostic capture.
+
+
+## Captured traversal; rebuilt buttons (25 October)
+
+The uploaded log begins after the BEGIN marker but contains complete CRC-checked
+ledger_tree exports. It is treated as an explicitly identified partial fragment,
+not evidence that missing ledger startup functions were captured. Private
+bytecode/disassembly remains under ignored build/.
+
+The captured go_down_a_level checks the highlighted node, then invokes load_node
+with the native finish_go_down_a_level callback. go_up_a_level performs the
+native hide/close/path/module/highlight sequence. launch_into rebuilds a path and
+shows windows but does not call the inventory enter callback; this is not used
+by the new adapter. find_node, get_cur_node and the native m_path structure
+establish the route. Parent chains carry native id_string values.
+
+0.4.0 queues a switch until input is released, moves up to a common parent and
+then highlights/enters each child through go_down_a_level. It waits for native
+m_node_load_in_progress instead of synthesizing callbacks. It never directly
+writes m_selected_slot, m_path or inventory item data. Back cancels queued work
+and remains forwarded to the existing handler. A bounded timeout drops the queue
+without blocking input. Query retention is separate from modal input guards.
+
+Owned headers are created only when the real list wrapper is visible with a
+valid category, addressing the reported landing-menu overlap. They reserve 96
+native units in the list pane, with two columns/three rows. Partial UI creation
+restores original geometry. There are no changes to Quest Hider or All Quest
+Markers. The mod requires the 0.4.0 DLL (Ctrl+1–6 polling) and adapter together.
+
+22 offline tests pass, including shared-parent traversal, deferred native loads,
+release gating, cancellation and landing-page exclusion. This is a new target
+preview: actual layout, hit boxes, native callbacks and Back must be checked in
+game before considering category buttons confirmed.
+
+Navigation ticks from the ledger's existing on_update_event (its presence is
+confirmed in the earlier module-field capture), so hiding the inventory child
+during a parent transition cannot strand the queue. Original return values
+are preserved. No new game callback or frame hook is invented.
