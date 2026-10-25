@@ -42,7 +42,7 @@ class InventoryProbeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             subprocess.run([lua, 'tests/inventory_probe_placeholder.lua', folder], cwd=ROOT, check=True)
             index = reader.extract(Path(folder) / 'placeholder.log', Path(folder) / 'private')
-            self.assertEqual(index['probe_version'], '0.1.1')
+            self.assertEqual(index['probe_version'], '0.1.2')
             self.assertIn('inventory_win.on_window_event', index['functions'])
 
     def test_partial_utility_log_can_be_retained_explicitly(self):
