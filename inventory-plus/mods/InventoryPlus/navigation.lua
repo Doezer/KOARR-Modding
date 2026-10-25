@@ -81,14 +81,16 @@ function M.create(S,log,N)
   end
   T.cancel();log('Category unavailable in the native tree.')
  end
+ function T.owns_click()return T.click_owned==true end
  function T.event(event,window)
+  if T.click_owned then return true end
   local _,W=context()
   local cursor=window
   for _=1,5 do
    if not cursor then break end
    for index,tab in ipairs(T.windows)do
     if cursor==tab.root or cursor==tab.label then
-     if event=='DOWN'then T.select(index)end
+     if event=='DOWN'then T.click_owned=true;T.release_ticks=0;T.select(index)end
      return true -- consume all owned events before the native list sees them
     end
    end
@@ -101,7 +103,14 @@ function M.create(S,log,N)
  end
  function T.update()
   local I,W,L=context()
-  advance()
+  -- Async key state can report release before the queued UP event is dispatched.
+  -- Keep ownership through two ledger updates, including events retargeted to
+  -- native controls, and only then start changing/destroying tab windows.
+  if T.click_owned then
+   if I then I.m_mouse_event_received=false;I.m_moused_over_id=nil end
+   if N.idle('InventoryPlus')then T.release_ticks=T.release_ticks+1 else T.release_ticks=0 end
+   if T.release_ticks>=2 then T.click_owned=false;T.release_ticks=0 end
+  else advance()end
   if not I or not I.m_inited or not I.m_window or not I.m_list_wrapper or not W then return end
   if not W.is_visible(I.m_window) or not W.is_visible(I.m_list_wrapper)
    or type(I.m_button_definitions)~='table' or not I.m_button_definitions[I.m_selected_slot]
@@ -154,7 +163,7 @@ function M.create(S,log,N)
  function T.detach()
   T.pending=nil;S.navigating=false;T.close()
  end
- function T.detach() T.cancel();T.close()end
+ function T.detach() T.click_owned=false;T.release_ticks=0;T.cancel();T.close()end
  return T
 end
 return M

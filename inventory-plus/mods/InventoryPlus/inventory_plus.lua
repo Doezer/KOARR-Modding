@@ -1,4 +1,4 @@
--- Inventory Plus 0.4.0: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.4.1: native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.4.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.4.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -195,6 +195,12 @@ function S.attach()
  wrap(ledger,'on_update_event',function(original)return function(...)
   local result=pack(original(...));update_tabs();return returns(result)
  end end)
+ -- The ledger sees button events before forwarding them to inventory. Stop
+ -- tab events here so native tree hit testing cannot also activate a category.
+ wrap(ledger,'on_button_event_selection',function(original)return function(...)
+  if S.enabled and tabs and tabs.event(...)then return end
+  return original(...)
+ end end)
  -- Project fresh native row tables; never change the actor's inventory arrays.
  wrap(I,'get_surplus_inventory',function(original)return function(...)
   if S.enabled and S.view_slot~=I.m_selected_slot then S.view_slot=I.m_selected_slot;S.category_changed=true end
@@ -288,12 +294,19 @@ function S.attach()
  -- Block the ledger's action dispatch before it reaches the native button tree.
  -- name_win's own modal handlers stay active for text, confirmation and cancel.
  wrap(rawget(G,'ledger_win'),'on_inputdeviceaction_event',function(original)return function(window,action,...)
+  local back=action=='b' or action=='exiting' or action=='exitingshortcut'
+  if S.enabled and tabs and tabs.owns_click() and not back then return end
   if S.enabled and (S.editing or S.back_guard)then return end
   if tabs and (action=='b' or action=='exiting' or action=='exitingshortcut')then tabs.cancel()end
   if shortcuts(action)then return end
   return original(window,action,...)
  end end)
  wrap(I,'handle_input',function(original)return function(input,...)
+  local action=type(input)=='table'and input.info
+  local back=action=='b' or action=='exiting' or action=='exitingshortcut'
+  if S.enabled and tabs and tabs.owns_click() and not back then
+   if type(input)=='table'then input.handled=true end;return
+  end
   if not S.editing and not S.back_guard and shortcuts(type(input)=='table' and input.info)then
    if type(input)=='table'then input.handled=true end;return
   end
@@ -306,6 +319,7 @@ function S.attach()
   'confirm_destroy_selected_item','confirm_destroy_junk'})do
   local action_name=name
   wrap(I,name,function(original)return function(...)
+   if S.enabled and tabs and tabs.owns_click()then return end
    if S.enabled and (S.editing or S.back_guard)then return end
    if S.enabled and S.query~='' and action_name=='confirm_destroy_junk'then
     log('Clear search before destroying all junk.');return
@@ -317,6 +331,11 @@ function S.attach()
   end end)
  end
  wrap(I,'on_update_event',function(original)return function(...)
+  if S.enabled and tabs and tabs.owns_click()then
+   local ledger=rawget(G,'ledger_win')
+   if type(ledger)~='table'or type(ledger.on_update_event)~='function'then update_tabs()end
+   return
+  end
   if S.enabled and S.back_guard then
    if N.idle('InventoryPlus')then S.back_guard=false end
    return

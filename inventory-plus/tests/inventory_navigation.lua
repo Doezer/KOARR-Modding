@@ -39,6 +39,15 @@ T.update();assert(down==1) -- never repeat while native load callback is pending
 I.m_selected_slot=1070770;I.m_list_wrapper.visible=true;tree.m_node_load_in_progress=false
 T.update();assert(not S.navigating and S.query=='frost'and S.order=='za')
 assert(T.select(1));T.cancel();T.update();assert(not S.navigating and down==1)
+-- A tab press owns retargeted releases even if its windows disappear.
+local button={};T.windows={{root=button,label={}}}
+assert(T.event('DOWN',button)and T.owns_click())
+assert(T.event('UP',{})and T.owns_click()) -- unrelated underlying native button
+T.close();assert(T.owns_click()) -- window lifetime does not end click ownership
+idle=false;T.update();assert(T.owns_click())
+idle=true;T.update();assert(T.owns_click())
+T.update();assert(not T.owns_click())
+T.cancel()
 -- Visible inventory root and a stale selected slot are not enough to show tabs.
 I.m_list_wrapper.visible=false;T.failed=false;T.update();assert(made==0)
 I.m_list_wrapper.visible=true;T.update();assert(made==1 and T.failed)

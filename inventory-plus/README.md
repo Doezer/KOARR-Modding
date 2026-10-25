@@ -1,25 +1,31 @@
-# Inventory Plus — search and name sorting, 0.4.0 preview
+# Inventory Plus — search and name sorting, 0.4.1 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
 without changing their order or merging their item contexts.
 
-**0.4.0 category-button preview:** six clickable tabs appear above the item list
+**0.4.1 category-button preview:** six clickable tabs appear above the item list
 in two columns and three rows. Click a tab or press Ctrl+1–6 to switch categories.
 They appear only inside an item category, not on the original landing menu.
 Brackets identify the active category; captions are English in this preview.
+
+0.4.1 intercepts owned tab events before the ledger can interpret their native
+IDs, and consumes the full click/release sequence before changing tab windows.
+The user confirmed category switching works better in 0.4.0 but reported native
+controls underneath also being clicked. The click-isolation fix needs an in-game
+retest. This is a Lua-only change; the native bridge remains version 0.4.0.
 
 Navigation now uses the native tree's normal parent/child transitions, including
 its loading callbacks. Search and sort are retained. Back cancels a pending
 switch; there is no blanket input guard. Native controller navigation remains
 available, but focus on the added buttons is not implemented.
 
-The 0.3.0 direct-jump implementation is not reused. 22 offline tests pass, but
+The 0.3.0 direct-jump implementation is not reused. 23 offline tests pass, but
 this replacement needs an in-game test. Damage/stat sorting, an All view and
 clickable search/sort controls remain planned.
 
-[Download 0.4.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.0-preview.zip.sha256)
+[Download 0.4.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.4.1-preview.zip.sha256)
 
 ## Installation
 
@@ -30,8 +36,7 @@ are disabled. Quest Hider and All Quest Markers are optional and unchanged.
 
 Close the game and extract the complete ZIP beside `koa.exe`, merging `mods`.
 When upgrading, replace the complete ZIP, including the DLL, JSON and the new
-`mods/InventoryPlus/navigation.lua`. The 0.4.0 adapter requires the matched 0.4.0
-DLL. Restart the game completely. Remove `mods/inventory_plus_probe.json` after
+`mods/InventoryPlus/navigation.lua`. The 0.4.1 adapter uses the 0.4.0 native bridge DLL included in this ZIP. Restart the game completely. Remove `mods/inventory_plus_probe.json` after
 the diagnostic run; the working mod does not require it.
 
 ```text
@@ -124,7 +129,8 @@ locale, resolution or other UI mod has been tested in-game.
 1. Open inventory: the original landing menu should have no overlapping tabs.
 2. Enter Primary Weapon. Six tabs should appear above the list. Click Armor,
    Accessories and Weapons, checking the correct items and native actions appear.
-3. Try Ctrl+1–6 and Back. Back must work during or after a category switch.
+3. Click several tabs, including the active tab. Check nothing underneath is
+   clicked or activated. Then try Ctrl+1–6 and Back. Back must work during or after a category switch.
 4. Search for an item-name fragment, switch categories and check the query is
    retained. Clear with Escape and try name sorting again.
 5. Close and reopen inventory; check there are no leftover or duplicated controls.

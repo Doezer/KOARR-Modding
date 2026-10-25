@@ -29,12 +29,13 @@ Press **F6** to hide/restore a quest and **F7** to switch to the hidden list.
 ## Inventory Plus
 
 Find items by displayed name with **Ctrl+F** and cycle native/name ordering with
-**Ctrl+S**. **Version 0.4.0 category-button preview** uses the native tree's normal traversal
+**Ctrl+S**. **Version 0.4.1 category-button preview** uses the native tree's normal traversal
 and displays tabs only inside an item category. Search, name sorting and clearing
-were confirmed in 0.2.1/0.3.1; the rebuilt tabs await in-game testing.
+were confirmed in 0.2.1/0.3.1; category switching improved in 0.4.0. The 0.4.1 click-isolation fix awaits an
+in-game retest.
 Damage/stat sorting remains planned.
 
-- [Download ZIP](inventory-plus/dist/InventoryPlus-0.4.0-preview.zip) · [Checksum](inventory-plus/dist/InventoryPlus-0.4.0-preview.zip.sha256)
+- [Download ZIP](inventory-plus/dist/InventoryPlus-0.4.1-preview.zip) · [Checksum](inventory-plus/dist/InventoryPlus-0.4.1-preview.zip.sha256)
 - [Installation and focused test](inventory-plus/README.md)
 - [Specification](inventory-plus/docs/inventory/spec.md) · [Research](inventory-plus/docs/inventory/research.md) · [Development notes](inventory-plus/docs/inventory/spike.md)
 

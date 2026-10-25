@@ -33,6 +33,11 @@ class InventoryPlusTests(unittest.TestCase):
         self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')
         subprocess.run([lua, 'tests/inventory_plus_ui.lua'], cwd=ROOT, check=True)
 
+    def test_tab_click_does_not_reach_native_controls(self):
+        lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
+        self.assertIsNotNone(lua)
+        subprocess.run([lua, 'tests/inventory_click_guard.lua'], cwd=ROOT, check=True)
+
     def test_native_navigation(self):
         lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
         self.assertIsNotNone(lua)

@@ -374,3 +374,23 @@ Navigation ticks from the ledger's existing on_update_event (its presence is
 confirmed in the earlier module-field capture), so hiding the inventory child
 during a parent transition cannot strand the queue. Original return values
 are preserved. No new game callback or frame hook is invented.
+
+
+## Tab click isolation (25 October)
+
+The user reports improved category switching, but clicks also activate the native
+control that would lie beneath a tab. Previously only inventory's button handler
+consumed owned events. 0.4.1 intercepts them in ledger.on_button_event_selection
+before the native ledger tree can interpret the cloned header's IDs.
+
+A tab DOWN retains click ownership independently of the owned windows. Retargeted
+button events, inventory actions and native inventory per-frame mouse handling
+are consumed until input is released and two ledger updates drain queued release
+events. Category traversal starts afterward. Back is explicitly exempt from the
+short capture guard; ledger frame processing continues. Teardown clears capture.
+
+23 offline tests pass, including ledger-first interception, release events on a
+different window, guard survival across destroyed controls, held-button/release
+timing, action suppression, Back forwarding and recovery of ordinary input. This
+is Lua-only, using the existing 0.4.0 native ABI. The user's click-through case
+requires a target-game retest; it is not claimed resolved from mocks alone.
