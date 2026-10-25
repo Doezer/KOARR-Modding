@@ -46,7 +46,7 @@ function M.create(S,log,N)
   if not d or blocked() or not tree or not I.m_list_wrapper or (not entry and not W.is_visible(I.m_list_wrapper))then return false end
   local node=tree:find_node(d.id)
   if not node or node.disabled then return false end
-  if I.m_selected_slot==d.idand W.is_visible(I.m_list_wrapper)then return true end
+  if I.m_selected_slot==d.id and W.is_visible(I.m_list_wrapper)then return true end
   local route={};local cursor=node
   for _=1,12 do
    if not cursor or not cursor.parent then break end
