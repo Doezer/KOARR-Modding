@@ -1,28 +1,22 @@
-# Inventory Plus — category tabs, search and sorting, 0.3.0 preview
+# Inventory Plus — search and name sorting, 0.3.1 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
 without changing their order or merging their item contexts.
 
-This preview adds six direct category tabs in three rows above the item list:
-Weapons, Armor, Accessories, Consumables, Items and Junk. Click a tab or press
-Ctrl+1 through Ctrl+6; brackets mark the active category. The Weapons tab retains
-an already-selected secondary weapon context; entering it from another category
-uses the native primary weapon context. Native restrictions still apply.
+**0.3.1 recovery:** withdraws the broken 0.3.0 category tabs and restores the
+search/name-sort implementation confirmed working in 0.2.1. The tab preview
+created controls over the category landing menu and attempted an invalid leaf
+transition through the ledger. Its transition guard could block Back. This build
+creates no category controls, makes no category jumps and has no transition guard.
+Use the game's original category navigation. Tabs and stat sorting remain planned.
 
-The tabs reuse native header controls and the ledger's full category transition.
-Search stays active across tab changes. The list is shortened to make room for
-the three tab rows; the native item details and actions remain in their own panes.
-If tab creation fails, its controls and layout changes are rolled back while
-native browsing and search remain available.
+This is a functional preview, not the complete redesigned inventory. Direct
+category tabs, clickable search/sort controls, an All view, rarity/type filters
+and additional columns remain planned.
 
-Damage, armor rating, rarity, required-level and value sorting are in the
-[specification](spec.md), pending verification of their native stat readers.
-This build still offers native order and name A–Z/Z–A. Clickable search/sort
-controls, an All view, rarity/type filters and additional columns remain planned.
-
-[Download 0.3.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.3.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.3.0-preview.zip.sha256)
+[Download 0.3.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.3.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/dist/InventoryPlus-0.3.1-preview.zip.sha256)
 
 ## Installation
 
@@ -32,9 +26,10 @@ identity, Lua API fingerprints and the framework registration hook. Other builds
 are disabled. Quest Hider and All Quest Markers are optional and unchanged.
 
 Close the game and extract the complete ZIP beside `koa.exe`, merging `mods`.
-When upgrading, replace the DLL, all Lua files and the JSON.
-The 0.3.0 DLL is required for the category shortcuts. Add the new
-`navigation.lua` file; older manifests will not load it. Keep the old export probe disabled.
+When upgrading, replace the DLL, both Lua files and the JSON together.
+If you installed 0.3.0, remove `mods/InventoryPlus/navigation.lua`; it is no longer
+referenced by the manifest. Restart the game completely to clear its existing
+controls and transition state. A Lua reload cannot repair that running session. Keep the old export probe disabled.
 `ui_trial.lua` from 0.1.0 is no longer referenced and can be removed.
 
 ```text
@@ -43,7 +38,6 @@ mods/
 ├── inventory_plus_native.dll
 └── InventoryPlus/
     ├── model.lua
-    ├── navigation.lua
     └── inventory_plus.lua
 ```
 
@@ -52,7 +46,6 @@ adapter; no nested asset loader is used during startup.
 
 ## Controls
 
-- **Click a category / Ctrl+1–6:** switch directly between native categories.
 - **Ctrl+F:** open the native search dialog. Confirm to apply a name filter.
 - **Ctrl+S:** cycle native order → Name A–Z → Name Z–A → native order.
 - **Escape / native Back action:** clear an active search first. A further press
@@ -71,11 +64,9 @@ state from before the search. Search text resets when the native inventory page
 opens; sort stays selected during the running session.
 
 The native dialog retains its initial text if confirmed completely empty. Use
-Escape after leaving the dialog to clear search. Search and sorting still require
-keyboard shortcuts. Category tabs support
-mouse clicks and Ctrl+1–6; controller focus on the new controls is not yet
-implemented. Ordinary native controller browsing remains available. Full
-controller-only search is not claimed. Tab captions are English in this preview.
+Escape after leaving the dialog to clear search. Keyboard shortcuts are required
+for the new controls in this preview; ordinary mouse/controller browsing remains
+native. Full controller-only search is not claimed.
 
 ## Matching and item behavior
 
@@ -108,17 +99,13 @@ The user confirmed the 0.1.0 dialog opens, typing leaves items untouched, both
 confirmation and cancellation return cleanly, and the hint appears. The supplied
 screenshot exposed an overlong footer, which is shortened in this build.
 
-The 0.2.0 game test revealed that its actor display-name getter was unsuitable:
-search matched none of 48 items and sorting appeared unchanged. 0.2.1 replaces
-that getter with the inventory formatter's name reader. Four real-engine
-emulation cases verify typed handles, actor lookup and custom/base-name selection
-at two image bases. The updated DLL builds and 21 offline tests pass. The user subsequently confirmed search, sort and clearing work in 0.2.1;
-no log was required for that confirmation.
-
-The 0.3.0 tab implementation passes mock checks for native routing, asynchronous
-transitions, item-action context, input guards, active labels and layout rollback.
-Its DLL builds and 22 offline tests pass. Actual tab appearance, clicking,
-navigation and layout at different resolutions still need the in-game test.
+The 0.2.0 game test exposed the unsuitable actor display-name reader. 0.2.1
+replaced it with the inventory formatter's name reader, including custom names;
+four real-engine emulation cases verified the handle/lookup/name-selection path
+at two image bases. The user confirmed search, name sorting and clearing work
+in 0.2.1. 0.3.1 restores that implementation and withdraws the failed 0.3.0
+navigation path. Its DLL builds and 21 offline tests pass; fresh-session recovery
+still needs the user's in-game confirmation.
 
 Offline checks cover native-handle routing after filtering/sorting, duplicate
 names, stacks, collapsed groups and header counts, empty results, removed items,
@@ -130,21 +117,19 @@ locale, resolution or other UI mod has been tested in-game.
 
 ## Focused game test
 
-1. Open inventory. Check that six readable tabs appear above the list and the
-   active tab has brackets. Click each one; check items and native actions match.
-2. Try Ctrl+1 through Ctrl+6. Search for a name fragment, switch categories and
-   confirm the query stays active and the result count follows the new category.
-3. Clear with Escape and try Ctrl+S again. Check the selected item still has the
-   right native details and action.
-4. Close and reopen inventory, then open an equipment comparison. Check tabs do
-   not overlap the item list/details and no leftover controls appear elsewhere.
+1. After a full restart, check the original category buttons do not overlap any
+   new controls. Enter a category and return with Back; close/reopen inventory.
+2. Open a category with several items. Search for part of a visible item's name,
+   such as **staff**. Check only matching items remain and counts look correct.
+3. Press Escape to clear. Try a query with no matches and clear it again.
+4. Press Ctrl+S to try both name directions. Select each of two same-named items,
+   if available, and check its native details correspond to the selected item.
+5. Check the normal action you want to use acts on that selected item, then clear
+   search and return to native sort. Confirm the compact hint is readable.
 
-A screenshot is useful for this layout test. Keep 0.2.1 as a rollback if needed;
-its [previous ZIP](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/e85e6c2/dist/InventoryPlus-0.2.1-preview.zip)
-remains available.
 Send the framework log and report any wrong names, counts, details or input
-behavior. No new export run is needed. Search and sorting remain scoped to the selected category; tabs change that
-native scope without merging item contexts.
+behavior. No new export run is needed. Search and sorting are category-scoped;
+this build does not navigate between categories for you.
 
 ## Removal and development
 

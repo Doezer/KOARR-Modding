@@ -1,6 +1,6 @@
 # Inventory Plus — technical spike findings
 
-Updated 18 October 2026. Current build: **0.3.0 category-tab preview**. The user
+Updated 25 October 2026. Current build: **0.3.1 recovery; tabs withdrawn**. The user
 confirmed the native input trial; projected rows need the next game check.
 This is the implementation record for the
 [specification's feasibility gates](spec.md#technical-approach-and-feasibility-gates).
@@ -284,3 +284,32 @@ ACTOR's weapon damage and armor wrappers take three arguments, not just an item
 handle (`0x00E8BF90` and `0x00E8C2D0` respectively). Their native card call sites
 and parameter meanings must be verified before choosing a damage metric. No
 numeric stat sort is exposed by this tab preview.
+
+
+## Tab preview failed; recovery (25 October)
+
+The user's screenshot shows all six cloned headers over the native category
+landing menu. Clicking led to a portrait-only view; Back stopped working, with
+repeated category-transition timeout messages. This supersedes the mocked
+navigation assumptions above: those tests could not prove the ledger contract.
+
+Two incorrect assumptions were shipped. A visible inventory root and a
+replace/pocket mode do not imply that an item-list page is active. Moving the
+list wrapper also cannot reserve space occupied by the separate native category
+menu. Second, existing calls to ledger_win.launch_into_button used top-level
+nodes; they did not establish support for jumping directly to category leaves.
+The preview's 180-update input guard aggravated the failed transition.
+
+0.3.1 withdraws navigation.lua and its manifest entries, removes the category-key
+extension and all switching guards, and restores the 0.2.1 adapter with a new
+matched DLL version. No control creation or ledger navigation is attempted.
+The obsolete mock tab test is removed. Recovery integration checks deliberately
+make stale navigation factories, control creation and leaf launches throw, and
+verify Back reaches the native ledger when the root is visible. Package checks
+exclude the withdrawn script. Existing row/search/selection tests remain.
+
+A complete game restart is required to remove already-created controls and
+broken native tree state. The old navigation.lua file may be deleted and is
+otherwise unreferenced. Future tabs require the actual native tree traversal
+implementation and page visibility contract, with recovery/Back demonstrated
+in-game before another navigation build is advertised as working.

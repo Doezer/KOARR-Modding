@@ -16,6 +16,11 @@ WINDOW={is_visible=function()return visible end,
 local plain,formatted=WINDOW.set_label_text,WINDOW.set_label_text_formatted
 ledger_win={set_reminder=function(id)WINDOW.set_label_text_formatted(footer,id);return nil,'reminder'end,
  on_inputdeviceaction_event=function()ledger_actions=ledger_actions+1;return nil,'ledger'end}
+-- Recovery regression: stale navigation tables must never create controls or
+-- attempt the invalid top-level ledger jump, even at the category landing page.
+InventoryPlusNavigation={create=function()error('Withdrawn navigation used')end}
+ledger_win.launch_into_button=function()error('Invalid leaf launch called')end
+WINDOW.create_window=function()error('Unexpected inventory overlay')end
 local original_reminder=ledger_win.set_reminder
 inventory_win={}
 dofile('mods/InventoryPlus/model.lua')
@@ -77,6 +82,17 @@ local hook_count=#S.hooks
 assert(dofile('mods/InventoryPlus/inventory_plus.lua')==S and #S.hooks==hook_count)
 local a,b=I.on_window_event('SHOW');assert(a==nil and b=='window')
 assert(footer.text=='Ctrl+F: Find | Ctrl+S: Sort')
+-- A category landing page can keep the root visible and mode 'replace'.
+-- Back must go to the native ledger, with no transition guard or overlays.
+local native_back=ledger_actions
+ledger_win.on_inputdeviceaction_event(nil,'b')
+assert(ledger_actions==native_back+1 and S.switching==nil)
+ledger_actions=0
+fired['Ctrl+1']=true
+I.on_update_event()
+assert(I.m_selected_slot==123 and S.switching==nil)
+fired['Ctrl+1']=nil
+original_updates=0
 assert(WINDOW.set_label_text==plain and WINDOW.set_label_text_formatted==formatted)
 local x,y,z=I.on_update_event();assert(x==nil and y=='update'and z==nil)
 -- Name sort moves rows but keeps the selected exact handle, including duplicates.
@@ -142,16 +158,6 @@ S.set_query('frost');I.m_list.selected=3
 I.force_native_selection=2;I.m_selected_slot=456;I.button_tree_callback('enter',456)
 assert(I.get_selected_item()==10)
 I.force_native_selection=nil;S.clear_search()
--- Native category transitions may hide/show the inventory while animating.
-assert(S.set_query('frost'))
-S.switching=true
-I.on_window_event('HIDE');assert(S.query=='frost')
-I.on_window_event('SHOW');assert(S.query=='frost')
-before=#actions
-I.handle_input({info='a'});I.equip_selected();ledger_win.on_inputdeviceaction_event(nil,'a')
-assert(#actions==before)
-assert(not S.open_search())
-S.switching=false;S.clear_search()
 -- Keyboard guard also covers dispatch directly to the inventory.
 local input={info='a'};before=#actions;fired['Ctrl+F']=true;I.handle_input(input)
 assert(S.editing and input.handled and #actions==before)

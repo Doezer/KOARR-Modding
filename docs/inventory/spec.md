@@ -1,9 +1,10 @@
 # Inventory Plus — proposed specification
 
-**Status:** the user confirmed search, name sorting and clearing in 0.2.1.
-The [0.3.0 preview](README.md) adds six category tabs and Ctrl+1–6 navigation;
-its layout and native transitions need the next in-game check. Additional stat
-sorting is specified below and remains pending reader verification.
+**Status:** search, name sorting and clearing were confirmed in 0.2.1. The 0.3.0
+tab preview failed in-game (overlapping category controls, empty transitions and
+blocked Back) and is withdrawn. The [0.3.1 recovery](README.md) restores native
+category navigation. Tabs and stat sorting remain targets, pending verified
+native navigation/card contracts and an in-game check.
 Working name: **Inventory Plus**.
 Target: GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, in this same
 repository with its own files and eventual ZIP.
@@ -143,7 +144,7 @@ with ItemScaling and other stat-changing mods after an actual comparison.
 Only applicable, verified sorts appear in the menu. A category change resets an
 inapplicable stat sort to name order and updates its label; it never applies
 weapon damage to potions. Mixed All-view stat sorting requires a separate
-explicit policy and is deferred. These options are targets: 0.3.0 still offers
+explicit policy and is deferred. These options are targets: 0.3.1 still offers
 native order and the two name directions only.
 
 Name is the secondary key for non-name sorts. Original snapshot ordinal is the
