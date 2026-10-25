@@ -1,134 +1,80 @@
-# Re-Reckoning utility mods
+# KOARR Modding
 
-A collection of independently installable mods. Pick the ZIP for the mod you want.
+Independent utility mods for **Kingdoms of Amalur: Re-Reckoning**.
+Install only the mod ZIPs you want; the repository's source archive is not an installer.
 
-| Mod | Status | Download / details |
-| --- | --- | --- |
-| All Quest Markers on World Map | Confirmed working · 1.0.1 | [Nexus Mods](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97) · details below |
-| Quest Hider | 1.0.0 · journal hide/restore confirmed working | [Download and installation](docs/quest-hider.md) |
-| Inventory Plus | 0.3.1 recovery · search and name sorting; tabs withdrawn | [Download and focused test](docs/inventory/README.md) · [Specification](docs/inventory/spec.md) · [Research](docs/inventory/research.md) |
+## All Quest Markers on World Map
 
-Quest Hider adds **F6** to hide/restore a journal quest and **F7** to switch to the
-hidden list, with persistent preferences and objective map filtering. It has its
-own files and does not require All Quest Markers. See its documentation for installation, controls and scope.
+Show world-map objectives for untracked quests alongside your tracked quest.
+**Version 1.0.1 — confirmed working on GOG with Fatesworn and Mod Framework v1.4.**
 
----
+![All Quest Markers](all-quest-markers/docs/images/header.png)
 
-![All Quest Markers — On the World Map](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/docs/images/header.png)
+- [Nexus Mods](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97)
+- [Download ZIP](all-quest-markers/dist/AllQuestMarkers-1.0.1.zip) · [Checksum](all-quest-markers/dist/AllQuestMarkers-1.0.1.zip.sha256)
+- [Installation, screenshot and compatibility](all-quest-markers/README.md)
 
-# All Quest Markers on World Map
+## Quest Hider
 
-Show objective markers for untracked quests alongside your tracked quest on the
-world map. See where your other quests lead without repeatedly switching the
-tracked quest, including distant objectives that normally appear only when tracked.
+Hide ongoing quests from the journal and filter their objective icons on maps.
+Press **F6** to hide/restore a quest and **F7** to switch to the hidden list.
+**Version 1.0.0 — journal hiding and restoration confirmed in-game.**
 
-**Confirmed working on GOG with Fatesworn and Mod Framework v1.4.**
+![Quest Hider](quest-hider/docs/images/quest-hider-banner.png)
 
-## Download
+- [Download ZIP](quest-hider/dist/QuestHider-1.0.0.zip) · [Checksum](quest-hider/dist/QuestHider-1.0.0.zip.sha256)
+- [Installation, controls and testing limits](quest-hider/README.md)
+- [Nexus listing description](quest-hider/docs/quest-hider-nexus-description.txt) · [Metadata](quest-hider/docs/quest-hider-nexus-metadata.json)
 
-- **[Nexus Mods — install with Vortex or download manually](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97)**
-- [GitHub ZIP — AllQuestMarkers 1.0.1](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/v1.0.1/dist/AllQuestMarkers-1.0.1.zip)
-- [SHA-256 checksum](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/v1.0.1/dist/AllQuestMarkers-1.0.1.zip.sha256) · [GitHub release](https://github.com/Doezer/KOARR-World-map-enhanced/releases/latest)
+## Inventory Plus
 
-Use the mod ZIP for manual installation. GitHub's automatically generated
-**Source code** archives contain development files.
+Find items by displayed name with **Ctrl+F** and cycle native/name ordering with
+**Ctrl+S**. **Version 0.3.1 recovery** restores native category navigation after
+the failed tab preview. Search, name sorting and clearing were confirmed in 0.2.1;
+category tabs and damage/stat sorting remain planned.
 
-## Features
+- [Download ZIP](inventory-plus/dist/InventoryPlus-0.3.1-preview.zip) · [Checksum](inventory-plus/dist/InventoryPlus-0.3.1-preview.zip.sha256)
+- [Installation and focused test](inventory-plus/README.md)
+- [Specification](inventory-plus/docs/inventory/spec.md) · [Research](inventory-plus/docs/inventory/research.md) · [Development notes](inventory-plus/docs/inventory/spike.md)
 
-- Displays native objective markers for untracked quests on the world map,
-  beyond the vanilla local-map-only behavior.
-- Keeps your selected quest as the tracked quest.
+## Requirements and installation
 
-## Screenshot
-
-![World map showing quest objective markers across the Faelands](https://raw.githubusercontent.com/Doezer/KOARR-World-map-enhanced/main/docs/images/world-map-screenshot.webp)
-
-In-game screenshot from [the mod's Nexus Mods page](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97?tab=images).
-
-## Requirements
-
+The supported setup is Windows, the GOG edition with Fatesworn, and
 [Mod Framework v1.4 by DevCortez](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/9).
-Install the framework separately using its author's instructions.
+Consult each mod's guide for executable restrictions and testing coverage.
 
-Confirmed working on the GOG edition of **Kingdoms of Amalur: Re-Reckoning**
-with **Fatesworn** and **Mod Framework v1.4**. Steam, Epic, other executable
-builds/framework versions and all DLC combinations have not been verified.
+Close the game, extract the chosen mod ZIP beside `koa.exe`, merging `mods`,
+and restart. The mods install independently; none requires the others.
 
-## Automatic installation
-
-Install the mod using **Vortex** from the
-[Nexus Mods page](https://www.nexusmods.com/kingdomsofamalurrereckoning/mods/97),
-then enable and deploy it.
-
-## Manual installation
-
-1. Close the game and install Mod Framework v1.4.
-2. Extract the mod's ZIP into the game folder containing `koa.exe`, merging the
-   `mods` folder.
-3. Check that the installed file is `mods/all_quest_markers_native.json`.
-4. Start the game, load your save and open the world map. There is
-   no console command to enter.
+## Repository layout and development
 
 ```text
-Kingdoms of Amalur Re-Reckoning/
-├── koa.exe
-└── mods/
-    └── all_quest_markers_native.json
+all-quest-markers/  Mod manifest, guide, docs, tests, packaging tools and ZIPs
+quest-hider/        Mod files, native source, docs, tests, tools and ZIPs
+inventory-plus/     Mod files, native source, probe, docs, tests, tools and ZIPs
+common/            Shared native bridge and development utilities
 ```
 
-If you used the earlier two-file test version, remove
-`mods/all_quest_markers_world_scope.json`; its patch is included in the combined
-file.
+Each mod folder is its own development root. Run its documented commands from
+that folder. ZIPs retain their existing game installation paths (`mods/...`);
+the repository layout does not add a folder inside the game.
 
-## Scope and compatibility
+Build native helpers from the repository root:
 
-This release shows world-map objectives using the game's native marker data.
-The local map and minimap retain their original behavior. It does not create
-destinations the engine cannot resolve, and it has no larger-region filter or
-configuration menu.
-
-The mod applies three patches to game memory. It does not modify `koa.exe` on disk
-or edit save files. Game updates or other mods changing the same code may cause
-conflicts. If any patch signature fails in the framework startup log, remove this
-mod and restart.
-
-The combined mod has been confirmed working in-game, but every quest, interior,
-DLC, undiscovered-area and save/load case has not been exhaustively tested.
-Existing earlier visibility checks remain, but complete preservation of reveal
-rules is not claimed.
-
-Tested executable SHA-256:
-
-```text
-16a400f6e8fc10dbe446a9e57717de9fbe975ef17c004f4ca405e2e4e09cb314
+```sh
+python quest-hider/tools/build_quest_hider.py
+python inventory-plus/tools/build_inventory_plus.py
 ```
 
-## Uninstall
+Run all offline tests (set `QH_LUA` to a Lua 5.1 interpreter):
 
-Close the game, then **disable the mod in Vortex**, or delete
-`mods/all_quest_markers_native.json` if you installed it manually. Restart the game.
-Keep shared framework files required by other mods.
+```sh
+python common/tools/test_all.py
+```
 
-## Troubleshooting
+Package a mod with its `tools/package*.py` script. Published ZIPs and checksums
+are retained byte for byte during this reorganization; no release was replaced.
+See [shared utilities](common/README.md) for common dependencies.
 
-Make sure the JSON is directly inside `mods`, not an extra nested folder or a
-`.json.txt` file. Restart after installation. For missing markers, include your
-game store/build, framework version, other mods, affected quest/region and startup
-log lines for `all_quest_markers_native.json`.
-
-## Source and documentation
-
-- [Mod JSON](mods/all_quest_markers_native.json)
-- [Changelog](CHANGELOG.md)
-- [Development and verification](https://github.com/Doezer/KOARR-World-map-enhanced/blob/main/docs/development.md)
-- [Native patch details](https://github.com/Doezer/KOARR-World-map-enhanced/blob/main/docs/native-patches.md)
-- [Published Nexus description (BBCode)](https://github.com/Doezer/KOARR-World-map-enhanced/blob/main/docs/nexus-description.txt)
-
-Game files and framework binaries are not bundled.
-
-## Credits and license
-
-Mod Framework by [DevCortez](https://github.com/DevCortez/KoaModFramework).
-Original project code and documentation are [MIT licensed](LICENSE).
-The in-game screenshot is from the author's Nexus Mods page; game imagery belongs
-to its respective owners. The header is original generated artwork.
+Original mod code is [MIT licensed](LICENSE). Game files and framework binaries
+are not bundled. Mod Framework is by [DevCortez](https://github.com/DevCortez/KoaModFramework).
