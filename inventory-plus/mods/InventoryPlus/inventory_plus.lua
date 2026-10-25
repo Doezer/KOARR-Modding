@@ -1,4 +1,4 @@
--- Inventory Plus 0.4.1: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.5.0: native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.4.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.5.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -37,7 +37,7 @@ local function hint()
   local text=S.matched==0 and 'No matches' or M.short(S.query,6)
   return text..' '..tostring(S.matched)..'/'..tostring(S.total)..(sort~='' and ' '..sort or '')..' | Esc: Clear'
  end
- if tabs and #tabs.windows>0 and sort==''then return 'Ctrl+1–6 Tabs | Ctrl+F/S Find/Sort'end
+ if tabs and #tabs.windows>0 and sort==''then return 'Ctrl+1–7 Tabs | Ctrl+F/S Find/Sort'end
  return sort~='' and (sort..' | Ctrl+F: Find | Ctrl+S') or 'Ctrl+F: Find | Ctrl+S: Sort'
 end
 local function update_hint()
@@ -78,8 +78,8 @@ local function available()
 end
 local function ensure_bridge()
  if S.ready then return true end
- local ok,reply=pcall(N.self_test,'InventoryPlus 0.4.0')
- if not ok or reply~='InventoryPlus 0.4.0'then
+ local ok,reply=pcall(N.self_test,'InventoryPlus 0.5.0')
+ if not ok or reply~='InventoryPlus 0.5.0'then
   if not S.bridge_warning then log('Native version mismatch; replace the complete package.');S.bridge_warning=true end
   return false
  end
@@ -155,7 +155,7 @@ local function shortcuts(action)
   local key=string.lower(action)
   if key=='b' or key=='exiting' or key=='exitingshortcut'then S.back_guard=true;S.clear_search();return true end
  end
- if tabs then for index=1,6 do if N.poll('Ctrl+'..index)then tabs.select(index);return true end end end
+ if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then tabs.select(index);return true end end end
  if N.poll('Ctrl+F')then S.open_search();return true end
  if N.poll('Ctrl+S')then S.cycle_sort();return true end
  return false
@@ -299,12 +299,16 @@ function S.attach()
   if S.enabled and (S.editing or S.back_guard)then return end
   if tabs and (action=='b' or action=='exiting' or action=='exitingshortcut')then tabs.cancel()end
   if shortcuts(action)then return end
+  if back and tabs and type(tabs.back)=='function'and tabs.back()then return end
   return original(window,action,...)
  end end)
  wrap(I,'handle_input',function(original)return function(input,...)
   local action=type(input)=='table'and input.info
   local back=action=='b' or action=='exiting' or action=='exitingshortcut'
   if S.enabled and tabs and tabs.owns_click() and not back then
+   if type(input)=='table'then input.handled=true end;return
+  end
+  if back and not S.editing and not S.back_guard and tabs and S.query=='' and type(tabs.back)=='function'and tabs.back()then
    if type(input)=='table'then input.handled=true end;return
   end
   if not S.editing and not S.back_guard and shortcuts(type(input)=='table' and input.info)then

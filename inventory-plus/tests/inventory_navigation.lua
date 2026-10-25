@@ -31,7 +31,7 @@ WINDOW={is_visible=function(w)return w.visible~=false end,create_window=function
 UIXML_ID=function()return 1 end
 local idle=false;local S={enabled=true,query='frost',order='za',set_query=function(q)S.query=q end}
 local T=M.create(S,function()end,{idle=function()return idle end});T.failed=true
-assert(T.select(2)and S.navigating)
+assert(T.select(3)and S.navigating)
 T.update();assert(up==0 and down==0) -- queued until mouse/shortcut is released
 idle=true;T.update();assert(up==1 and down==0)
 T.update();assert(down==1 and tree.m_node_load_in_progress)
@@ -48,6 +48,31 @@ idle=false;T.update();assert(T.owns_click())
 idle=true;T.update();assert(T.owns_click())
 T.update();assert(not T.owns_click())
 T.cancel()
+-- Primary and Secondary are separate native contexts, not aliases.
+I.m_selected_slot=2627341;I.m_list_wrapper.visible=true
+I.m_button_definitions[2010694]={}
+tree.m_path={4242793,2468509};tree.m_node_load_in_progress=false
+assert(T.select(2));T.update()
+assert(tree.loading.id_string==2010694)
+I.m_selected_slot=2010694;tree.m_node_load_in_progress=false;T.update()
+assert(not S.navigating)
+-- Entering Inventory bypasses the old category landing page even if the
+-- previous selected slot is stale and already equals the entry destination.
+T.last_index=1;tree.m_path={4242793};I.m_selected_slot=2627341;I.m_list_wrapper.visible=false
+tree.m_window={visible=true};tree.m_is_enabled=true
+function tree:remove_tree_focus()self.m_is_enabled=false end
+function tree:show()self.m_window.visible=true;self.m_is_enabled=true end
+WINDOW.set_visible=function(w,v)w.visible=v end
+T.update();assert(S.navigating and not tree.m_window.visible)
+T.update();assert(tree.loading.id_string==2627341)
+I.m_list_wrapper.visible=true;tree.m_node_load_in_progress=false;T.update()
+assert(not S.navigating)
+assert(T.back())
+for _=1,4 do T.update()end
+assert(not S.navigating and #tree.m_path==0 and tree.m_window.visible)
+-- Other ledger sections retain the original navigation window.
+tree.m_window.visible=true;T.update();assert(tree.m_window.visible)
+tree.m_path={4242793,2468509}
 -- Visible inventory root and a stale selected slot are not enough to show tabs.
 I.m_list_wrapper.visible=false;T.failed=false;T.update();assert(made==0)
 I.m_list_wrapper.visible=true;T.update();assert(made==1 and T.failed)

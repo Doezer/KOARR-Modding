@@ -394,3 +394,29 @@ different window, guard survival across destroyed controls, held-button/release
 timing, action suppression, Back forwarding and recovery of ordinary input. This
 is Lua-only, using the existing 0.4.0 native ABI. The user's click-through case
 requires a target-game retest; it is not claimed resolved from mocks alone.
+
+
+## Native inventory shell replacement and weapon slots (25 October)
+
+The user requests replacing native category navigation while retaining native
+inventory contents. 0.5.0 splits Primary (2627341) and Secondary (2010694) into
+separate buttons, then Armor/Accessories/Consumables/Items/Junk. Ctrl+1–7 uses
+the updated 0.5.0 DLL. Seven buttons occupy two columns/four rows (128 native
+units). Both weapon contexts still enter through native tree callbacks; no new
+equip implementation or item classification is introduced.
+
+The ledger tree's category window is hidden only when its current node is under
+the Inventory branch (4242793). remove_tree_focus is the captured native method;
+only its category window is hidden, not inventory item/detail windows. On the
+Inventory or Weapons landing node, a native traversal enters the last viewed
+category (Primary initially). A stale selected slot cannot falsely count as an
+entered category when the list is hidden. Back clears search through existing
+logic, then native parent transitions leave the whole Inventory branch and
+tree.show restores the normal ledger navigation outside it. Other ledger
+sections are left alone. Native slot disabled checks remain in force.
+
+23 offline tests pass, now including separate weapon target IDs, hidden-list
+entry with a stale matching slot, menu hiding, full-branch Back and restoration
+of other ledger navigation. The helper builds successfully. These checks do not
+confirm target-game layout, normal input, or primary/secondary Equip routing; the
+0.5.0 preview requires that in-game check.

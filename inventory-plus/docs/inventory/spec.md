@@ -1,7 +1,7 @@
 # Inventory Plus — proposed specification
 
 **Status:** search and name sorting work in-game. The failed 0.3.0 tabs were
-withdrawn; 0.4.0 rebuilds navigation using the traversal methods captured by the
+withdrawn; 0.5.0 replaces the category menu and rebuilds navigation using the traversal methods captured by the
 0.1.2 probe. Its controls and native transitions await in-game testing. Stat
 sorting remains pending native reader verification.
 Working name: **Inventory Plus**.
@@ -58,7 +58,7 @@ names and tooltips; no tiny-font mode is required to use the mod.
 | Priority | Feature | Release condition |
 | --- | --- | --- |
 | P0 | Preserve item identity and original action behavior | Every displayed row resolves to the exact original item/stack and context |
-| P0 | Direct tabs for the six existing categories | Mouse and keyboard navigation, visible active tab, no missing items |
+| P0 | Direct categories with separate Primary/Secondary weapon contexts | Mouse and keyboard navigation, visible active tab, no missing items |
 | P0 | Search by displayed item name | Real edit box and focus isolation proven; no console-based search workflow |
 | P0 | Explicit name sort and Reset/Clear Filters | Stable ordering, visible sort direction and reversible filtering |
 | P1 | All view across non-junk categories | Mixed-category row/action routing proven; otherwise absent from the first preview and explicitly documented |
@@ -76,9 +76,13 @@ Inventory Plus release. Any scope reduction should be explicit in its README.
 
 ### Tabs and scope
 
-Use Weapons, Armor, Accessories, Consumables, Items and Junk as the initial
+Use Primary Weapon, Secondary Weapon, Armor, Accessories, Consumables, Items and Junk as the initial
 baseline, verifying the remaster's actual labels and subcategories in the spike.
-The new UI exposes them directly rather than inventing a second classification.
+The new UI exposes native contexts directly rather than inventing a second
+classification. Primary and Secondary target their original equipment slots;
+browsing must never equip or unequip an item. Opening Inventory bypasses its
+native category menu, while other ledger navigation remains native. After
+clearing filters, Back leaves Inventory instead of showing the old hierarchy.
 
 All contains carried non-junk entries across the other categories. Equipped items
 appear only if they belong to the native inventory dataset, and appear once.

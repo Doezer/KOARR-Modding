@@ -6,7 +6,7 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.4.1-preview'
+VERSION = '0.5.0-preview'
 PAYLOAD = {
     'mods/inventory_plus_native.dll': 'build/inventory_plus_native.dll',
     'mods/inventory_plus.json': 'mods/inventory_plus.json',

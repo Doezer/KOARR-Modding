@@ -3,7 +3,8 @@ if _G.InventoryPlusNavigationV2 then return _G.InventoryPlusNavigationV2 end
 local M={}
 _G.InventoryPlusNavigationV2=M
 local definitions={
- {id=2627341,parent=2468509,title='Weapons',also=2010694},
+ {id=2627341,parent=2468509,title='Primary'},
+ {id=2010694,parent=2468509,title='Secondary'},
  {id=1070770,title='Armor'},{id=6689260,title='Accessories'},
  {id=7304644,title='Consumables'},{id=911336,title='Items'},{id=607556,title='Junk'}
 }
@@ -30,7 +31,7 @@ function M.create(S,log,N)
   T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil
  end
  function T.cancel()
-  T.pending=nil;S.navigating=false
+  T.pending=nil;T.exiting=nil;S.navigating=false
  end
  local function tree_context()
   local I,W,L=context();local tree=L and L.m_button_tree
@@ -40,12 +41,12 @@ function M.create(S,log,N)
   end
   return tree,I,W
  end
- function T.select(index)
+ local function select_category(index,entry)
   local d=definitions[index];local tree,I,W=tree_context()
-  if not d or blocked() or not tree or not I.m_list_wrapper or not W.is_visible(I.m_list_wrapper)then return false end
+  if not d or blocked() or not tree or not I.m_list_wrapper or (not entry and not W.is_visible(I.m_list_wrapper))then return false end
   local node=tree:find_node(d.id)
   if not node or node.disabled then return false end
-  if I.m_selected_slot==d.id or I.m_selected_slot==d.also then return true end
+  if I.m_selected_slot==d.idand W.is_visible(I.m_list_wrapper)then return true end
   local route={};local cursor=node
   for _=1,12 do
    if not cursor or not cursor.parent then break end
@@ -55,6 +56,45 @@ function M.create(S,log,N)
   if cursor~=tree.m_tree then return false end
   T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree}
   S.navigating=true;return true
+ end
+ function T.select(index)return select_category(index,false)end
+ local function in_inventory(node)
+  for _=1,12 do
+   if not node then return false end
+   if node.id_string==4242793 then return true end
+   node=node.parent
+  end
+  return false
+ end
+ function T.back()
+  local tree=tree_context()
+  if S.editing or S.back_guard or not tree or not in_inventory(tree:get_cur_node())then return false end
+  T.cancel();T.click_owned=false;T.exiting={tree=tree,frames=0};S.navigating=true;return true
+ end
+ local function inventory_shell()
+  local tree,I,W=tree_context();if not tree then return end
+  if T.exiting then
+   local p=T.exiting;p.frames=p.frames+1
+   if tree~=p.tree or p.frames>180 then T.exiting=nil;S.navigating=false;return end
+   if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
+   if in_inventory(tree:get_cur_node())then tree:go_up_a_level()
+   else
+    T.exiting=nil;S.navigating=false;T.close()
+    if type(tree.show)=='function'then tree:show()end
+   end
+   return
+  end
+  local node=tree:get_cur_node()
+  if not in_inventory(node)then return end
+  -- Hide only the ledger category tree, never the native inventory contents.
+  if tree.m_window then
+   if type(tree.remove_tree_focus)=='function'and tree.m_is_enabled then tree:remove_tree_focus()end
+   W.set_visible(tree.m_window,false)
+  end
+  if not T.pending and not blocked() and I.m_inited and not W.is_visible(I.m_list_wrapper)
+   and (node.id_string==4242793 or node.id_string==2468509)then
+   select_category(T.last_index or 1,true)
+  end
  end
  local function advance()
   local p=T.pending;if not p then return end
@@ -103,6 +143,7 @@ function M.create(S,log,N)
  end
  function T.update()
   local I,W,L=context()
+  inventory_shell()
   -- Async key state can report release before the queued UP event is dispatched.
   -- Keep ownership through two ledger updates, including events retargeted to
   -- native controls, and only then start changing/destroying tab windows.
@@ -110,7 +151,7 @@ function M.create(S,log,N)
    if I then I.m_mouse_event_received=false;I.m_moused_over_id=nil end
    if N.idle('InventoryPlus')then T.release_ticks=T.release_ticks+1 else T.release_ticks=0 end
    if T.release_ticks>=2 then T.click_owned=false;T.release_ticks=0 end
-  else advance()end
+  elseif not T.exiting then advance()end
   if not I or not I.m_inited or not I.m_window or not I.m_list_wrapper or not W then return end
   if not W.is_visible(I.m_window) or not W.is_visible(I.m_list_wrapper)
    or type(I.m_button_definitions)~='table' or not I.m_button_definitions[I.m_selected_slot]
@@ -129,7 +170,7 @@ function M.create(S,log,N)
     assert(width>=320 and height>=180,'Inventory panel is too small for tabs')
     T.geometry={window=I.m_list_wrapper,x=x,y=y,width=width,height=height}
     T.parent=I.m_window
-    local cell=width/2;local row_height=32
+    local cell=width/2;local row_height=32;local reserved=128
     for index,d in ipairs(definitions)do
      local root=W.create_window(UIXML_ID('inventory_win'),'INVENTORY_HEADER',I.m_window)
      assert(root,'Native category header could not be created')
@@ -146,7 +187,7 @@ function M.create(S,log,N)
      local column=(index-1)%2;local row=(index-1-column)/2
      W.move(root,x+column*cell,y+row*row_height)
     end
-    W.move(I.m_list_wrapper,x,y+96);W.resize(I.m_list_wrapper,width,height-96)
+    W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
    end)
    if not ok then T.close();T.failed=true;log('Category tabs unavailable; native navigation retained: '..tostring(err));return end
   end
@@ -154,14 +195,12 @@ function M.create(S,log,N)
   if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode then return end
   T.last_slot=I.m_selected_slot;T.last_visible=visible;T.last_mode=I.m_curr_mode
   for index,tab in ipairs(T.windows)do
-   local d=definitions[index];local selected=I.m_selected_slot==d.id or I.m_selected_slot==d.also
+   local d=definitions[index];local selected=I.m_selected_slot==d.id
+   if selected then T.last_index=index end
    local caption=tostring(index)..' '..d.title
    W.set_label_text(tab.label,selected and ('['..caption..']')or caption)
    W.set_visible(tab.root,visible)
   end
- end
- function T.detach()
-  T.pending=nil;S.navigating=false;T.close()
  end
  function T.detach() T.click_owned=false;T.release_ticks=0;T.cancel();T.close()end
  return T
