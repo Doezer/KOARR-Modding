@@ -33,7 +33,7 @@ def parse_log(text):
             continue
         message = line.split(PREFIX, 1)[1].strip()
         if message.startswith('BEGIN '):
-            if message not in {'BEGIN version=0.1.0', 'BEGIN version=0.1.1'}:
+            if message not in {'BEGIN version=0.1.0', 'BEGIN version=0.1.1', 'BEGIN version=0.1.2'}:
                 raise ValueError('Unsupported probe log version')
             current = [message]
             sessions.append(current)

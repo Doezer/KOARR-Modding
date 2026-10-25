@@ -1,4 +1,4 @@
-# Inventory Plus — technical probe 0.1.1
+# Inventory Plus — technical probe 0.1.2
 
 This is a **diagnostic build**, not the inventory overhaul. It collects the
 original inventory Lua function exports and bounded snapshots of existing module
@@ -8,42 +8,37 @@ It does not add a search box, sort/filter the inventory, call inventory getters,
 change items, or alter the existing mods. It requires Mod Framework v1.4 on the
 GOG Re-Reckoning setup used for the earlier tests. No extra DLL is included.
 
-[Download diagnostic ZIP](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-Probe-0.1.1.zip)
-· [Checksum](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-Probe-0.1.1.zip.sha256)
+[Download diagnostic ZIP](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-Probe-0.1.2.zip)
+· [Checksum](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-Probe-0.1.2.zip.sha256)
 
-## Update from 0.1.0
+## Navigation capture
 
-The first probe could see an inventory module placeholder before its functions
-loaded and then skip that module permanently. Version 0.1.1 rescans modules on
-later triggers, exports each newly discovered function once and attaches its
-observers after the callbacks become available. Your earlier log's missing
-inventory export was a probe bug, not a failure to open the inventory.
+0.1.2 adds the missing ledger traversal functions and methods of the existing
+`m_button_tree` object. It reads/dumps their code; it never calls them. Collection
+runs again after naturally triggered inventory events so runtime-created closures
+are included. Snapshot integer checks no longer depend on unavailable math.floor.
+This captures the real contract needed to replace the failed category-tab path.
 
-For this update, replace only `mods/InventoryPlusProbe/probe.lua` with the new
-version and restart. The manifest is unchanged. The full ZIP is also available.
+Keep the working Inventory Plus 0.3.2 installed. This diagnostic ZIP adds only
+its separate probe JSON/Lua files, with no DLL or replacement inventory adapter.
 
 ## One test run
 
-1. Close the game. Extract this ZIP into the folder containing `koa.exe`, merging
-   `mods`. Keep Quest Hider disabled for this test: move both
-   `mods/quest_hider.json` and `mods/quest_hider_native.dll` out of `mods` with the
-   game closed. All Quest Markers may remain installed.
-2. Start the game and load a save. Open the inventory, browse **Weapons** and
-   **Consumables**, and select two different items. If readily available, select
-   two copies of the same named item; do not obtain or modify items just for this.
-3. Close the inventory and exit the game. Send the **full framework log as a
-   `.txt` file**, using the same log source as the earlier map-mod tests. Search
-   for `[InventoryPlusProbe]` to check that its output is present. Do not trim it
-   to the last few lines: exports begin during startup and can be long.
-4. If convenient, include one inventory screenshot to establish the current
-   layout and UI scale. No console command or F2 input is needed.
+1. Close the game and extract the probe ZIP beside `koa.exe`, merging `mods`.
+   Keep the working Inventory Plus installed. No other mod needs disabling for
+   this navigation-only capture.
+2. Open inventory, enter **Weapons → Primary Weapon**, go **Back**, enter
+   **Armor**, then go **Back**. Use the original category buttons.
+3. Exit the game and send the full framework log as a `.txt` file. The export
+   begins at startup; do not send only the final lines. No F2 command is needed.
+4. With the game closed, remove `mods/inventory_plus_probe.json` to stop logging.
 
 Do not rename a character, buy, sell, junk or destroy anything for this test. The
 probe observes the actions you naturally take; it never opens the name-entry
 window. A `name_win` function export is used only to inspect how the native text
 entry control is built and how its input focus works.
 
-A healthy run includes `BEGIN version=0.1.1`, `MODULE inventory_win`,
+A healthy run includes `BEGIN version=0.1.2`, `MODULE inventory_win`,
 `BLOB-BEGIN` / `BLOB-CHUNK` / `BLOB-END` lines and `SNAPSHOT` lines. A console
 message saying `READY` confirms the probe loaded, not that search or sorting works.
 If there is no `MODULE inventory_win`, send the startup log anyway so we can

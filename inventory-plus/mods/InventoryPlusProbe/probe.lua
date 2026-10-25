@@ -2,7 +2,7 @@
 local G=_G
 local old=rawget(G,"InventoryPlusProbe")
 if type(old)=="table" and old.active then old.collect();return old end
-local S={active=true,version="0.1.1",seen={},hooks={},bytes=0,events=0}
+local S={active=true,version="0.1.2",seen={},hooks={},bytes=0,events=0}
 G.InventoryPlusProbe=S
 local function log(text) print("[InventoryPlusProbe] "..text) end
 local function pack(...) return {n=select("#",...),...} end
@@ -67,7 +67,7 @@ local function snapshot_table(path,t,depth,budget)
     for k,v in next,t do
         count=count+1;if count>160 then log("STATE-LIMIT "..path);break end
         local kind=type(k)
-        if label(k) or (kind=="number" and k>=1 and k<=8 and k==math.floor(k)) then
+        if label(k) or (kind=="number" and k>=1 and k<=8 and k%1==0) then
             budget.left=budget.left-1;if budget.left<0 then return end
             local field=path.."."..tostring(k)
             log("STATE "..field.." "..identity(v))
@@ -103,7 +103,7 @@ local function attach_inventory(m)
                     local event=scalar(select(1,...))
                     local ok=pcall(function()
                         log("EVENT "..name.." arg1="..event)
-                        snapshot("inventory_win");snapshot("player_inventory_manager")
+                        S.collect();snapshot("inventory_win");snapshot("ledger_win");snapshot("player_inventory_manager")
                     end)
                     if not ok then pcall(log,"OBSERVER-ERROR inspection stopped for this event") end
                 end
@@ -115,11 +115,23 @@ local function attach_inventory(m)
     end
 end
 local targets={"inventory_win","player_inventory_manager","name_win","uixml_helper","menu_tools","ledger_win"}
-local utility={init=true,create_standard_list=true,create_tabbed_title_bar=true,create_menu_button_helper=true,set_reminder=true,button_set_text=true,
+local utility={build_button_tree=true,create_button_tree=true,launch_into_button=true,close_child=true,handle_button_tree_input=true,init=true,create_standard_list=true,create_tabbed_title_bar=true,create_menu_button_helper=true,set_reminder=true,button_set_text=true,
     button_set_generic=true,button_set_state=true,on_editbox_event=true,handle_input=true,
     on_inputdeviceaction_event=true,on_window_event=true}
 function S.collect()
     if not S.active then return end
+    -- Read closure code from the existing native tree without calling methods.
+    local ledger=rawget(G,"ledger_win")
+    local tree=type(ledger)=="table" and rawget(ledger,"m_button_tree")
+    if type(tree)=="table" then
+        S.tree_functions=S.tree_functions or {}
+        for _,name in ipairs(keys(tree,128))do
+            local value=rawget(tree,name)
+            if type(value)=="function" and not S.tree_functions[name]then
+                S.tree_functions[name]=true;dump_function("ledger_tree",name,value)
+            end
+        end
+    end
     for _,module in ipairs(targets) do
         local m=rawget(G,module)
         if type(m)=="table" then
@@ -171,5 +183,5 @@ if type(W)=="table" then
     end
 end
 S.collect()
-log("READY Open inventory, browse two categories and select two items. No console command needed.")
+log("READY Navigation capture: open inventory, enter Primary Weapon, Back, enter Armor, Back. No console command needed.")
 return S

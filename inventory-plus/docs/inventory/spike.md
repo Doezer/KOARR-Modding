@@ -325,3 +325,14 @@ native inventory updates and relinquishes it on HIDE/START_CLOSE. A visible root
 alone is insufficient: landing-menu footer updates remain native. Integration
 checks reproduce late reminder writes, update overwrites and a hidden list under
 a visible root. The DLL ABI remains 0.3.1; this is a Lua-only change.
+
+
+## Rebuilding category navigation (25 October)
+
+The user reaffirmed category buttons as required. Restoring native browsing was
+a recovery step, not completion of navigation. Probe 0.1.2 adds passive exports
+of ledger traversal functions and runtime m_button_tree closures. Existing
+exports establish top-level launch calls but not leaf traversal, so another
+button build must wait for these real contracts instead of repeating the failed
+launch_into_button(leaf) assumption. No tab clicks or category mutations are
+introduced by this diagnostic capture.

@@ -1,4 +1,5 @@
 -- Run with a writable output directory argument. Game APIs must never be called.
+math.floor=nil
 local real_print=print
 local lines={}
 print=function(line) lines[#lines+1]='[LUA] '..line end
@@ -22,9 +23,13 @@ inventory_win.m_nested.loop=inventory_win.m_nested
 player_inventory_manager={m_items=inventory_win.m_rows,get_items=getter}
 name_win={init=function() error('Name window must not be opened') end}
 menu_tools={create_standard_list=getter,unrelated=getter}
-ledger_win={set_reminder=getter}
+ledger_win={set_reminder=getter,launch_into_button=getter,
+ m_button_tree={close_child=getter,enter_child=getter,handle_button_tree_input=getter}}
 local expected=string.dump(getter)
 local S=dofile('mods/InventoryPlusProbe/probe.lua')
+local initial=table.concat(lines,'\n')
+assert(string.find(initial,'BLOB-BEGIN ledger_win.launch_into_button',1,true))
+assert(string.find(initial,'BLOB-BEGIN ledger_tree.enter_child',1,true))
 assert(events==0 and inventory_win.m_selected==1 and #inventory_win.m_rows==2)
 local wrapper=inventory_win.on_window_event
 local before=#lines
