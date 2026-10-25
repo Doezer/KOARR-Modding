@@ -1,4 +1,4 @@
--- Inventory Plus 0.3.1: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.3.2: native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.3.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.3.2-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local function pack(...)return {n=select('#',...),...}end
 local function returns(t)return unpack(t,1,t.n)end
@@ -71,7 +71,7 @@ local function ensure_bridge()
  if S.ready then return true end
  local ok,reply=pcall(N.self_test,'InventoryPlus 0.3.1')
  if not ok or reply~='InventoryPlus 0.3.1'then
-  if not S.bridge_warning then log('Native version mismatch; replace the complete 0.3.1 package.');S.bridge_warning=true end
+  if not S.bridge_warning then log('Native version mismatch; replace the complete package.');S.bridge_warning=true end
   return false
  end
  local folded,normalized=pcall(N.fold,'InVeNtOrY PlUs')
@@ -246,7 +246,10 @@ function S.attach()
   update_hint();return unpack(result,2,result.n)
  end end)
  wrap(rawget(G,'ledger_win'),'set_reminder',function(original)return function(...)
-  if S.enabled and scope then return capture(original,...)end
+  local W=rawget(G,'WINDOW')
+  local browsing=not S.window_hidden and available() and I.m_list_wrapper
+   and W.is_visible(I.m_list_wrapper)
+  if S.enabled and not S.window_hidden and (scope or browsing) then return capture(original,...)end
   reminder=nil;return original(...)
  end end)
  wrap(I,'button_tree_callback',function(original)return function(...)
@@ -256,7 +259,9 @@ function S.attach()
   return unpack(result,2,result.n)
  end end)
  wrap(I,'on_window_event',function(original)return function(event,...)
+  if event=='SHOW'then S.window_hidden=false end
   if S.enabled and (event=='HIDE' or event=='START_CLOSE')then
+   S.window_hidden=true
    restore_hint();if not S.editing then S.query='';restore_categories()end
   end
   if S.enabled and event=='SHOW' and not S.editing then S.query='';restore_categories()end
@@ -312,6 +317,8 @@ function S.attach()
   if S.enabled and S.editing then return end
   local result=pack(original(...))
   shortcuts()
+  local W=rawget(G,'WINDOW')
+  if not S.window_hidden and available() and I.m_list_wrapper and W.is_visible(I.m_list_wrapper)then update_hint()end
   return returns(result)
  end end)
  if not S.announced then S.announced=true;log('Search preview ready. Ctrl+F: find; Ctrl+S: name sort; Esc: clear search.')end

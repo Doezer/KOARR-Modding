@@ -1,8 +1,13 @@
-# Inventory Plus — search and name sorting, 0.3.1 preview
+# Inventory Plus — search and name sorting, 0.3.2 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
 without changing their order or merging their item contexts.
+
+**0.3.2 footer correction:** restores the shortcut hint after late native footer
+updates when entering an item category. The user confirmed search/sort still work
+in 0.3.1 and that only its entry hint is missing. This is a Lua-only change; the
+native bridge remains 0.3.1. Its in-game footer behavior needs confirmation.
 
 **0.3.1 recovery:** withdraws the broken 0.3.0 category tabs and restores the
 search/name-sort implementation confirmed working in 0.2.1. The tab preview
@@ -15,8 +20,8 @@ This is a functional preview, not the complete redesigned inventory. Direct
 category tabs, clickable search/sort controls, an All view, rarity/type filters
 and additional columns remain planned.
 
-[Download 0.3.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.1-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.1-preview.zip.sha256)
+[Download 0.3.2 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.2-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.3.2-preview.zip.sha256)
 
 ## Installation
 

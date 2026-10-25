@@ -313,3 +313,15 @@ broken native tree state. The old navigation.lua file may be deleted and is
 otherwise unreferenced. Future tabs require the actual native tree traversal
 implementation and page visibility contract, with recovery/Back demonstrated
 in-game before another navigation build is advertised as working.
+
+
+## Footer entry correction (25 October)
+
+The user confirmed 0.3.1 search/sorting still work; category buttons are absent
+as intended, but the hint is missing on entry to an item category. 0.3.2 retains
+footer capture for native ledger.set_reminder calls outside the category callback
+when the actual list wrapper is visible. It reapplies the captured hint after
+native inventory updates and relinquishes it on HIDE/START_CLOSE. A visible root
+alone is insufficient: landing-menu footer updates remain native. Integration
+checks reproduce late reminder writes, update overwrites and a hidden list under
+a visible root. The DLL ABI remains 0.3.1; this is a Lua-only change.

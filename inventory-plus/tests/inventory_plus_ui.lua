@@ -8,9 +8,9 @@ InventoryPlusNative={item_name=function()error("No inventory yet")end,self_test=
  poll=function(s)local v=fired[s];fired[s]=nil;return v and s or nil end,
  idle=function(s)return idle and s or nil end,fold=string.lower}
 local original_updates,actions,ledger_actions,launches=0,{},0,0
-local visible=true
+local visible,list_visible=true,true
 local footer={text='Original hint'}
-WINDOW={is_visible=function()return visible end,
+WINDOW={is_visible=function(w)if w==inventory_win.m_list_wrapper then return list_visible end;return visible end,
  set_label_text=function(w,text)w.text=text end,
  set_label_text_formatted=function(w,id)w.text='Localized '..tostring(id);return nil,'label' end}
 local plain,formatted=WINDOW.set_label_text,WINDOW.set_label_text_formatted
@@ -27,7 +27,7 @@ dofile('mods/InventoryPlus/model.lua')
 local S=dofile('mods/InventoryPlus/inventory_plus.lua')
 assert(S.enabled and #S.hooks==0 and launches==0)
 local I=inventory_win
-I.m_inited=true;I.m_window={};I.m_curr_mode='replace';I.m_selected_slot=123
+I.m_inited=true;I.m_window={};I.m_list_wrapper={};I.m_curr_mode='replace';I.m_selected_slot=123
 I.m_button_definitions={[123]={},[456]={}}
 I.m_category_status={Weapon={collapsed=false},Potions={collapsed=true}}
 local rows={{header_id='Weapon',header_text=100,len=3},{item_id=10,stack=2},{item_id=20},{item_id=30},
@@ -81,6 +81,18 @@ assert(dofile('mods/InventoryPlus/inventory_plus.lua')==S)
 local hook_count=#S.hooks
 assert(dofile('mods/InventoryPlus/inventory_plus.lua')==S and #S.hooks==hook_count)
 local a,b=I.on_window_event('SHOW');assert(a==nil and b=='window')
+assert(footer.text=='Ctrl+F: Find | Ctrl+S: Sort')
+-- Late native footer updates happen outside button_tree_callback on entry.
+local ra,rb=ledger_win.set_reminder(999)
+assert(ra==nil and rb=='reminder'and footer.text=='Ctrl+F: Find | Ctrl+S: Sort')
+footer.text='Native update overwritten';I.on_update_event()
+assert(footer.text=='Ctrl+F: Find | Ctrl+S: Sort')
+original_updates=0
+-- A visible root with a hidden list is the category landing menu.
+list_visible=false;ledger_win.set_reminder(123)
+assert(footer.text=='Localized 123')
+I.on_update_event();assert(footer.text=='Localized 123');original_updates=0
+list_visible=true;ledger_win.set_reminder(123)
 assert(footer.text=='Ctrl+F: Find | Ctrl+S: Sort')
 -- A category landing page can keep the root visible and mode 'replace'.
 -- Back must go to the native ledger, with no transition guard or overlays.
