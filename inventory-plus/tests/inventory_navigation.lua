@@ -48,6 +48,10 @@ idle=false;T.update();assert(T.owns_click())
 idle=true;T.update();assert(T.owns_click())
 T.update();assert(not T.owns_click())
 T.cancel()
+-- The native event argument order is unconfirmed; either order is owned.
+T.windows={{root=button,label={}}}
+assert(T.event(button,'DOWN')and T.owns_click())
+T.click_owned=false;T.windows={};T.cancel() -- the DOWN also queued a navigation
 -- Primary and Secondary are separate native contexts, not aliases.
 I.m_selected_slot=2627341;I.m_list_wrapper.visible=true
 I.m_button_definitions[2010694]={}
@@ -72,6 +76,22 @@ for _=1,4 do T.update()end
 assert(not S.navigating and #tree.m_path==0 and tree.m_window.visible)
 -- Other ledger sections retain the original navigation window.
 tree.m_window.visible=true;T.update();assert(tree.m_window.visible)
+-- A non-Back exit (a ledger shortcut jump) must not strand the hidden tree.
+tree.m_path={4242793};I.m_list_wrapper.visible=true;I.m_selected_slot=2627341
+T.update();assert(not tree.m_window.visible)
+tree.m_path={};T.update();assert(tree.m_window.visible)
+-- If no category can be entered, restore the native menu instead of a blank page.
+local all={}
+for _,c in ipairs(inventory.children)do all[#all+1]=c end
+for _,c in ipairs(weapons.children)do all[#all+1]=c end
+for _,c in ipairs(all)do c.disabled=true end
+tree.m_path={4242793};I.m_list_wrapper.visible=false;tree.m_window.visible=true;tree.m_is_enabled=true
+local before=down
+T.update();assert(tree.m_window.visible and not S.navigating and T.native_menu)
+for _=1,5 do T.update()end
+assert(down==before and tree.m_window.visible) -- no retry loop
+tree.m_path={};T.update();assert(not T.native_menu)
+for _,c in ipairs(all)do c.disabled=nil end
 tree.m_path={4242793,2468509}
 -- Visible inventory root and a stale selected slot are not enough to show tabs.
 I.m_list_wrapper.visible=false;T.failed=false;T.update();assert(made==0)

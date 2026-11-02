@@ -420,3 +420,38 @@ entry with a stale matching slot, menu hiding, full-branch Back and restoration
 of other ledger navigation. The helper builds successfully. These checks do not
 confirm target-game layout, normal input, or primary/secondary Equip routing; the
 0.5.0 preview requires that in-game check.
+
+
+## 0.5.0 review and 0.5.1 hardening (2 November)
+
+No newer commits or in-game feedback were available (HEAD 1edda2e), so 0.5.0 was
+reviewed against the contracts above rather than assumed to work. Concrete risks
+found in the shell and fixed Lua-only in 0.5.1 (native helper and bridge token
+unchanged):
+
+- **Blank page on failed entry.** The shell hid the ledger tree, then tried only
+  the last viewed category. If that node was disabled (or entry timed out) the
+  list never appeared, the tree stayed hidden and the attempt repeated every
+  frame. It now tries every category, and on failure restores the native menu
+  and stops retrying until the player leaves the Inventory branch or a list
+  shows. Navigation timeouts and a missing node do the same.
+- **Stranded hidden tree.** Only the Back path called `tree.show`. Any other
+  exit from the branch (ledger shortcut jump) now restores it, and detach does too.
+- **Unconfirmed button event contract.** `(event, window)` argument order was only
+  ever mocked. `T.event` now treats the string argument as the event name, and
+  logs each distinct event name and target type once (cap 8) so the next framework
+  log settles the contract without another probe.
+- Footer used an en dash that the game font may lack; it is now `Ctrl+1-7`, and
+  the tab hint remains visible while a sort is active.
+
+The inventory suite (14 tests, including new cases for swapped event arguments,
+native-menu fallback without a retry loop, and tree restore on a non-Back exit)
+passes. The Quest Hider package test could not run here because its ignored
+native DLL is not built on this machine; nothing in that mod changed.
+
+Stat sorting is still unimplemented. A local `koa.exe` exists but no captured
+exports or disassembly of the ACTOR/TYPE damage and armor wrappers are present
+in this checkout, and their three-argument meaning is unverified. Next step is a
+private, read-only disassembly of the native item-card readers
+(`0x00E8BF90` damage, `0x00E8C2D0` armor and their call sites), not a guess.
+

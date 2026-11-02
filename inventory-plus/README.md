@@ -1,29 +1,36 @@
-# Inventory Plus — search and name sorting, 0.5.0 preview
+# Inventory Plus — search and name sorting, 0.5.1 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
 without changing their order or merging their item contexts.
 
-**0.5.0 navigation preview:** Inventory keeps its native item list, details,
+**0.5.x navigation preview:** Inventory keeps its native item list, details,
 equipment comparisons and actions, while the original category menu is replaced
 by seven buttons: **Primary, Secondary, Armor, Accessories, Consumables, Items,
 Junk**. Primary and Secondary are the game's separate weapon-slot contexts, not
 a combined weapon filter. Their native eligibility checks and Equip behavior
 remain in use. No items are equipped merely by browsing either slot.
 
-Click the buttons or use **Ctrl+1–7**. Opening Inventory enters the last viewed
+Click the buttons or use **Ctrl+1-7**. Opening Inventory enters the last viewed
 category (Primary initially). Back clears an active search first, then leaves
 Inventory instead of reopening the old category hierarchy. Other ledger sections
 keep their native navigation. The new controls use two columns and four rows,
 leaving the item details and character pane native. Captions are English.
 
-This includes the 0.4.1 full-click isolation guard. The native helper and Lua
-adapter both require 0.5.0; replace the complete package. 23 offline tests pass,
-but automatic entry, native-menu replacement, Back and weapon slot actions need
-an in-game check. Stat sorting and an All view remain planned.
+This includes the 0.4.1 full-click isolation guard. **0.5.1 is Lua-only** and
+hardens 0.5.0's shell: if no category can be entered (for example a disabled
+native node) or entry times out, the native category menu is restored instead of
+a blank page, and the hidden menu is returned on any exit from Inventory, not
+only Back. Tab-click handling no longer depends on the native event argument
+order, and the first few distinct button event names are written once to the log
+for diagnosis. The footer keeps the tab hint while a sort is active.
+The native helper is unchanged (bridge token 0.5.0); replace the complete
+package. The 14 inventory offline tests pass, but automatic entry, native-menu
+replacement, Back and weapon slot actions still need an in-game check. Stat
+sorting and an All view remain planned.
 
-[Download 0.5.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.5.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.5.0-preview.zip.sha256)
+[Download 0.5.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.5.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.5.1-preview.zip.sha256)
 
 ## Installation
 
@@ -34,7 +41,7 @@ are disabled. Quest Hider and All Quest Markers are optional and unchanged.
 
 Close the game and extract the complete ZIP beside `koa.exe`, merging `mods`.
 When upgrading, replace the complete ZIP, including the DLL, JSON and the new
-`mods/InventoryPlus/navigation.lua`. The 0.5.0 adapter requires the 0.5.0 native bridge DLL included in this ZIP. Restart the game completely. Remove `mods/inventory_plus_probe.json` after
+`mods/InventoryPlus/navigation.lua`. The adapter requires the 0.5.0 native bridge DLL included in this ZIP. Restart the game completely. Remove `mods/inventory_plus_probe.json` after
 the diagnostic run; the working mod does not require it.
 
 ```text
@@ -52,7 +59,7 @@ adapter; no nested asset loader is used during startup.
 
 ## Controls
 
-- **Click tabs / Ctrl+1–7:** switch categories while browsing an item list.
+- **Click tabs / Ctrl+1-7:** switch categories while browsing an item list.
 - **Ctrl+F:** open the native search dialog. Confirm to apply a name filter.
 - **Ctrl+S:** cycle native order → Name A–Z → Name Z–A → native order.
 - **Escape / native Back action:** clear an active search first. A further press
@@ -130,14 +137,20 @@ locale, resolution or other UI mod has been tested in-game.
 2. Switch Primary → Secondary and check that each displays the native candidates
    for that slot. Select a weapon in each and verify the native Equip action
    targets the intended slot; browsing alone must not change equipment.
-3. Try Accessories, Consumables, Items and Junk using clicks and Ctrl+1–7.
+3. Try Accessories, Consumables, Items and Junk using clicks and Ctrl+1-7.
    Check the native item details/actions and no click-through to other controls.
 4. Search, switch categories and clear with Escape. A further Back should leave
    Inventory for the native ledger, without reopening the old category hierarchy.
 5. Open another ledger section and check its original navigation is still usable.
+6. Leave Inventory by closing the ledger (not Back) and by jumping to another
+   section with a ledger shortcut, then reopen the ledger: its normal category
+   navigation must be visible and usable.
 
-The [0.4.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/d51206a/inventory-plus/dist/InventoryPlus-0.4.1-preview.zip)
-remains available for rollback.
+Please attach the framework log: 0.5.1 prints `Button event <name> target <type>`
+once per distinct tab/native button event, which shows the real event contract.
+
+The [0.5.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/1edda2e/inventory-plus/dist/InventoryPlus-0.5.0-preview.zip) and the [0.4.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/d51206a/inventory-plus/dist/InventoryPlus-0.4.1-preview.zip)
+remain available for rollback.
 Send the framework log and report any wrong names, counts, details or input
 behavior. No new export run is needed. Search and sorting are category-scoped;
 the new buttons change the native category without merging item contexts.

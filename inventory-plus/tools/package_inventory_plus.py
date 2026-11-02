@@ -6,7 +6,7 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.5.0-preview'
+VERSION = '0.5.1-preview'
 PAYLOAD = {
     'mods/inventory_plus_native.dll': 'build/inventory_plus_native.dll',
     'mods/inventory_plus.json': 'mods/inventory_plus.json',
@@ -28,7 +28,10 @@ def build(output):
             entry.compress_type = zipfile.ZIP_DEFLATED
             entry.create_system = 3
             entry.external_attr = 0o100644 << 16
-            z.writestr(entry, (ROOT / source).read_bytes())
+            data = (ROOT / source).read_bytes()
+            if not name.endswith('.dll'):
+                data = data.replace(b'\r\n', b'\n')  # identical on LF and autocrlf checkouts
+            z.writestr(entry, data)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     archive.with_suffix('.zip.sha256').write_text(f'{digest}  {archive.name}\n')
     return archive

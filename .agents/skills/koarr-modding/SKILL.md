@@ -59,8 +59,10 @@ using this as release status. Historical notes contain superseded failures.
 - Inventory Plus: search, name sorting and clearing confirmed in 0.2.1/0.3.1.
   0.3.0 category navigation failed and was withdrawn. The user reported improved
   navigation in 0.4.0, followed by click-through. 0.4.1 addresses click ownership;
-  0.5.0 replaces the native category menu and splits Primary/Secondary contexts.
-  **0.5.0 entry, Back and equipment-slot behavior are awaiting in-game validation.**
+  0.5.0 replaces the native category menu and splits Primary/Secondary contexts;
+  0.5.1 (Lua-only) restores the native menu if entry fails and releases the
+  hidden tree on any exit. **Entry, Back and equipment-slot behavior are awaiting
+  in-game validation.**
   Damage/stat sorts remain specified, not implemented or verified.
 
 ## Non-negotiable implementation rules

@@ -153,7 +153,10 @@ in the outer native ledger and preserving native items/details/actions. Current
 last category (Primary initially), and exits the full branch on Back after
 clearing search. Other ledger sections must stay native. Seven header controls
 use two columns/four rows, reserving 128 native list units. This entry/exit flow
-and slot behavior are awaiting an in-game check.
+and slot behavior are awaiting an in-game check. 0.5.1 adds a fallback: if no
+category can be entered or navigation times out, restore the native category menu
+(`tree.show`) and stop auto-entering until the branch is left; a hidden tree is
+also returned on any non-Back exit. Never leave the tree hidden without a list.
 
 ### Controls and click ownership
 

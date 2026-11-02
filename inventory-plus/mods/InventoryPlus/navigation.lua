@@ -71,6 +71,12 @@ function M.create(S,log,N)
   if S.editing or S.back_guard or not tree or not in_inventory(tree:get_cur_node())then return false end
   T.cancel();T.click_owned=false;T.exiting={tree=tree,frames=0};S.navigating=true;return true
  end
+ -- Give the native category menu back instead of leaving a blank hidden page.
+ local function fall_back(tree,message)
+  T.native_menu=true;T.hidden_tree=nil
+  if type(tree.show)=='function'then tree:show()end
+  log(message)
+ end
  local function inventory_shell()
   local tree,I,W=tree_context();if not tree then return end
   if T.exiting then
@@ -79,21 +85,42 @@ function M.create(S,log,N)
    if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
    if in_inventory(tree:get_cur_node())then tree:go_up_a_level()
    else
-    T.exiting=nil;S.navigating=false;T.close()
+    T.exiting=nil;S.navigating=false;T.close();T.hidden_tree=nil
     if type(tree.show)=='function'then tree:show()end
    end
    return
   end
   local node=tree:get_cur_node()
-  if not in_inventory(node)then return end
+  if not in_inventory(node)then
+   -- Any exit (Back, a ledger shortcut jump) must give the tree back if we hid it.
+   T.native_menu=false
+   if T.hidden_tree then
+    T.hidden_tree=nil
+    if type(tree.show)=='function'then tree:show()end
+   end
+   return
+  end
+  local listed=I.m_list_wrapper and W.is_visible(I.m_list_wrapper)
+  if T.native_menu then
+   -- Entry failed earlier: keep the native category menu until a list shows or we leave.
+   if listed then T.native_menu=false end
+   return
+  end
   -- Hide only the ledger category tree, never the native inventory contents.
   if tree.m_window then
    if type(tree.remove_tree_focus)=='function'and tree.m_is_enabled then tree:remove_tree_focus()end
-   W.set_visible(tree.m_window,false)
+   W.set_visible(tree.m_window,false);T.hidden_tree=tree
   end
-  if not T.pending and not blocked() and I.m_inited and not W.is_visible(I.m_list_wrapper)
+  if not T.pending and not blocked() and I.m_inited and I.m_list_wrapper and not listed
    and (node.id_string==4242793 or node.id_string==2468509)then
-   select_category(T.last_index or 1,true)
+   -- Prefer the last viewed category, then any other the native tree allows.
+   local first=T.last_index or 1
+   local entered=select_category(first,true)
+   for index=1,#definitions do
+    if entered then break end
+    if index~=first then entered=select_category(index,true)end
+   end
+   if not entered then fall_back(tree,'No category can be entered; native category menu restored.')end
   end
  end
  local function advance()
@@ -101,7 +128,11 @@ function M.create(S,log,N)
   local tree,I,W=tree_context()
   if tree~=p.tree or not S.enabled then T.cancel();return end
   p.frames=p.frames+1
-  if p.frames>180 then T.cancel();log('Category navigation stopped; Back remains available.');return end
+  if p.frames>180 then
+   T.cancel();log('Category navigation stopped; Back remains available.')
+   if not (I.m_list_wrapper and W.is_visible(I.m_list_wrapper))then fall_back(tree,'Native category menu restored.')end
+   return
+  end
   if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
   if I.m_selected_slot==p.id and I.m_list_wrapper and W.is_visible(I.m_list_wrapper)then
    T.cancel();if S.query~=p.query then S.set_query(p.query)end;return
@@ -120,9 +151,18 @@ function M.create(S,log,N)
    end
   end
   T.cancel();log('Category unavailable in the native tree.')
+  if not (I.m_list_wrapper and W.is_visible(I.m_list_wrapper))then fall_back(tree,'Native category menu restored.')end
  end
  function T.owns_click()return T.click_owned==true end
+ local seen_events,seen_count={},0
  function T.event(event,window)
+  -- The native argument order is unconfirmed; the event name is the string one.
+  if type(event)~='string' and type(window)=='string' then event,window=window,event end
+  -- Name each distinct event once (bounded) so the framework log settles the contract.
+  if type(event)=='string' and not seen_events[event] and seen_count<8 then
+   seen_events[event]=true;seen_count=seen_count+1
+   log('Button event '..event..' target '..type(window))
+  end
   if T.click_owned then return true end
   local _,W=context()
   local cursor=window
@@ -202,7 +242,11 @@ function M.create(S,log,N)
    W.set_visible(tab.root,visible)
   end
  end
- function T.detach() T.click_owned=false;T.release_ticks=0;T.cancel();T.close()end
+ function T.detach()
+  T.click_owned=false;T.release_ticks=0;T.cancel();T.close()
+  local tree=T.hidden_tree;T.hidden_tree=nil;T.native_menu=false
+  if tree and type(tree.show)=='function'then pcall(tree.show,tree)end
+ end
  return T
 end
 return M

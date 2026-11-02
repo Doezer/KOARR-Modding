@@ -1,4 +1,4 @@
--- Inventory Plus 0.5.0: native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.5.1 (Lua-only; native bridge token stays 0.5.0): native category-scoped search and grouped name sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.5.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.5.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -37,7 +37,9 @@ local function hint()
   local text=S.matched==0 and 'No matches' or M.short(S.query,6)
   return text..' '..tostring(S.matched)..'/'..tostring(S.total)..(sort~='' and ' '..sort or '')..' | Esc: Clear'
  end
- if tabs and #tabs.windows>0 and sort==''then return 'Ctrl+1–7 Tabs | Ctrl+F/S Find/Sort'end
+ if tabs and #tabs.windows>0 then
+  return (sort~='' and sort..' | ' or '')..'Ctrl+1-7 Tabs | Ctrl+F/S Find/Sort'
+ end
  return sort~='' and (sort..' | Ctrl+F: Find | Ctrl+S') or 'Ctrl+F: Find | Ctrl+S: Sort'
 end
 local function update_hint()
