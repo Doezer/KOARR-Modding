@@ -488,3 +488,9 @@ logs the values for indices 0..13, both modes, for the selected item, which the
 user compares with the native card. It must not be written until that comparison
 is planned for one game run.
 
+
+
+## Stats probe 0.1.0 (2 November)
+
+A separate diagnostic (own DLL, manifest and Lua; see [stats-probe.md](stats-probe.md)) calls the fingerprinted pure readers at 0x00E42140/0x00E421D0 for the selected item on Ctrl+D and logs slots 0..13 raw and scaled. It exists to learn which slot and mode the native card shows. The native call path is unexercised in-game; only its Lua side and packaging are covered offline.
+

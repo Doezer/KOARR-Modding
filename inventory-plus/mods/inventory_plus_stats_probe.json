@@ -1,0 +1,5 @@
+{
+  "scripts": [
+    {"trigger": "inventory_win", "path": ".\\mods\\InventoryPlusStatsProbe\\stats_probe.lua"}
+  ]
+}
