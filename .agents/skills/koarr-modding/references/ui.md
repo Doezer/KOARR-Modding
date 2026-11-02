@@ -61,7 +61,9 @@ of silently removing items. Duplicate names keep snapshot ordinal as tie-breaker
 Damage/armor/value/rarity/required-level sorts require separate semantic audits.
 Names found in a binary are leads, not signatures. Both TYPE and ACTOR expose
 similarly named damage/armor functions. Captured native wrappers for ACTOR damage
-(`0x00E8BF90`) and armor (`0x00E8C2D0`) take **three arguments**. Do not call them
+(`0x00E8BF90`) and armor (`0x00E8C2D0`) take **three arguments**: actor handle,
+integer slot index (14-slot table), boolean scaled flag; they return a truncated
+integer. Which index the card shows is unverified (see spike notes). Do not call them
 with a handle alone, parse localized tooltip text, infer DPS, or conflate item
 level and required level. Verify the exact native card's value and scaling flags.
 Unknown numeric values sort last in either direction, not as zero.

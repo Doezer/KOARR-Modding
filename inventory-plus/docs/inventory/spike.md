@@ -455,3 +455,36 @@ in this checkout, and their three-argument meaning is unverified. Next step is a
 private, read-only disassembly of the native item-card readers
 (`0x00E8BF90` damage, `0x00E8C2D0` armor and their call sites), not a guess.
 
+
+## Native damage/armor readers: static findings (2 November)
+
+Read-only disassembly of the supported GOG `koa.exe` (SHA-256 matches
+`common/tools/verify_game_vm.py`). Disassembly stays private in ignored `build/`.
+Addresses are image-base 0x400000 VAs.
+
+| Wrapper | Lua shape | Calls |
+| --- | --- | --- |
+| `0x00E8BF90` damage | `fn(actor_handle, int index, bool scaled)` | `0x00E42140` |
+| `0x00E8C2D0` armor | `fn(actor_handle, int index, bool scaled)` | `0x00E421D0` |
+
+- Argument 1 is decoded with the shared actor-handle decoder (`0x00E5F770`); 2 is
+  read as an integer, 3 as a boolean. A wrong type returns the shared error value.
+- Both resolve a per-actor component (`0x00F24EF0`: type 0xB for damage, 0xC for
+  armor) and require its flag bit 0 (`[comp+0x20]&1`); otherwise they return 0.
+  Lookup writes only to its local out-structure. The reads are pure.
+- The component holds an array of 8-byte entries from +0x24: a float and a pointer
+  to a float override. A set override wins. Negative values clamp to 0.
+- `scaled=false` returns that clamped entry for `index`. For damage, `scaled=true`
+  multiplies it by a clamped modifier at component +0x15C, except index 12, which
+  is returned unscaled. The result is converted with `__ftol`, so Lua sees a
+  truncated integer.
+- Damage indices loop 0..13 in a helper, so the table has 14 slots. Which index
+  the item card shows is not yet known; do not assume index 0.
+
+The registered Lua names are not plain strings in the static image (runtime
+data), so the names and the card's actual call site (game Lua) are unverified.
+No sort is enabled. Next: a small diagnostic ZIP that, on request in the Inventory,
+logs the values for indices 0..13, both modes, for the selected item, which the
+user compares with the native card. It must not be written until that comparison
+is planned for one game run.
+
