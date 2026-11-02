@@ -50,6 +50,11 @@ and restart. The mods install independently; none requires the others.
 
 ## Repository layout and development
 
+AI agents can use the repository's [KOARR modding skill](.agents/skills/koarr-modding/SKILL.md)
+for verified runtime contracts, build/test commands, diagnostic workflows and
+known UI/native pitfalls. Invoke it as `$koarr-modding` in a client that discovers
+repository skills. It is agent documentation, not a game mod or runtime dependency.
+
 ```text
 all-quest-markers/  Mod manifest, guide, docs, tests, packaging tools and ZIPs
 quest-hider/        Mod files, native source, docs, tests, tools and ZIPs
