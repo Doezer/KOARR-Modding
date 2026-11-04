@@ -1,6 +1,6 @@
 # Inventory Plus — proposed specification
 
-**Status:** search and name sorting work in-game (0.5.1 hardens the 0.5.0 shell). The failed 0.3.0 tabs were
+**Status:** search and name sorting work in-game (0.5.1 hardens the 0.5.0 shell; 0.6.0 adds provisional damage/armor sorts). The failed 0.3.0 tabs were
 withdrawn; 0.5.0 replaces the category menu and rebuilds navigation using the traversal methods captured by the
 0.1.2 probe. Its controls and native transitions await in-game testing. Stat
 sorting remains pending native reader verification.

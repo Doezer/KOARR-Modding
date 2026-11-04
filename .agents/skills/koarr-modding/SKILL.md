@@ -63,7 +63,8 @@ using this as release status. Historical notes contain superseded failures.
   0.5.1 (Lua-only) restores the native menu if entry fails and releases the
   hidden tree on any exit. **Entry, Back and equipment-slot behavior are awaiting
   in-game validation.**
-  Damage/stat sorts remain specified, not implemented or verified.
+  0.6.0 adds damage/armor sorts from the native read-only tables (14 slots, raw/scaled);
+  the card's slot is unverified, provisionally slot 0 scaled. Ctrl+D logs all slots.
 
 ## Non-negotiable implementation rules
 

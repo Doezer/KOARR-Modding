@@ -494,3 +494,23 @@ is planned for one game run.
 
 A separate diagnostic (own DLL, manifest and Lua; see [stats-probe.md](stats-probe.md)) calls the fingerprinted pure readers at 0x00E42140/0x00E421D0 for the selected item on Ctrl+D and logs slots 0..13 raw and scaled. It exists to learn which slot and mode the native card shows. The native call path is unexercised in-game; only its Lua side and packaging are covered offline.
 
+
+## 0.6.0 provisional damage/armor sorting (4 November)
+
+The native helper gains `stat(handle, spec)` and `stats(handle)` (and Ctrl+D
+polling). They call the fingerprinted pure readers (`0x00E42140`, `0x00E421D0`)
+only after the actor handle resolves to a valid inventory actor, and refuse to
+register if either function's prologue differs. `spec` is a four-character string:
+kind (`d`/`a`), two-digit slot 00..13, scaled flag 0/1; results return as text.
+The bridge token is `InventoryPlus 0.6.0`, so the DLL and Lua must be replaced
+together.
+
+The adapter adds `dmg` (Primary/Secondary) and `arm` (Armor) orders, high to low,
+unknown last, name then snapshot ordinal as tie-breakers, and resets them to
+Name A-Z in other categories. The slot/mode table (`STATS` in `inventory_plus.lua`)
+is **provisional**: slot 0, scaled. Ctrl+D logs every slot, both modes, for the
+selected item so one in-game comparison against the native card can settle it.
+17 offline tests pass (model, adapter, native build under `-Werror`); the native
+call path itself has not run in the game. The separate stats probe remains for
+diagnosis but is no longer needed for this check.
+

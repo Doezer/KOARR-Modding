@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "../../../common/src/vm_bridge.h"
 #include "input.h"
@@ -18,6 +19,8 @@ static void (__cdecl *pushstring)(void*,const char*);
 static uint32_t *(__cdecl *read_actor_handle)(uint32_t *,void *,int);
 static void *(__thiscall *lookup_actor)(void *,uint32_t);
 static const struct ip_afstring *(__thiscall *actor_name)(void *,int);
+static int (__thiscall *read_damage)(void *,uint32_t,int,int);
+static int (__thiscall *read_armor)(void *,uint32_t,int,int);
 static void *(__stdcall *previous_new_state)(void*);
 static struct ip_shortcut_state shortcuts[256];
 static int focused(void) {
@@ -28,11 +31,11 @@ static int focused(void) {
 static int down(int code) {return (GetAsyncKeyState(code)&0x8000)!=0;}
 static const char *argument(void *state) {return gettop(state)==1?getstring(state,1):NULL;}
 static int api_self_test(void *state) {
-    const char *s=argument(state);return s&&!strcmp(s,"InventoryPlus 0.5.0")?1:0;
+    const char *s=argument(state);return s&&!strcmp(s,"InventoryPlus 0.6.0")?1:0;
 }
 static int api_poll(void *state) {
     const char *s=argument(state);int key;
-    if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||(s[5]!='F'&&s[5]!='S'&&(s[5]<'1'||s[5]>'7')))return 0;
+    if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||(s[5]!='F'&&s[5]!='S'&&s[5]!='D'&&(s[5]<'1'||s[5]>'7')))return 0;
     key=(unsigned char)s[5];
     return ip_search_pressed(&shortcuts[key],focused(),down(VK_CONTROL),down(key),
                              down(VK_MENU)||down(VK_LWIN)||down(VK_RWIN),down(VK_SHIFT));
@@ -73,8 +76,44 @@ static int api_item_name(void *state) {
     text=ip_inventory_name(actor,actor_name);if(!text)return 0;
     pushstring(state,text);return 1;
 }
+/* Read-only per-actor damage/armor tables (14 slots). Returns false for stale handles. */
+static int stat_context(void *state,uint32_t *handle,void **stats,void **actor) {
+    void *manager;
+    *handle=0;read_actor_handle(handle,state,1);if(!*handle)return 0;
+    manager=*(void **)VA(0x19fec38);if(!manager)return 0;
+    *actor=lookup_actor((char *)manager+0x2238,*handle);
+    if(!*actor||!(*(const uint8_t *)((const char *)*actor+0x10c)&1))return 0;
+    *stats=*(void **)VA(0x19fe9c4);if(!*stats)return 0;
+    *stats=(char *)*stats+0x3d28;return 1;
+}
+/* stat(handle, "d"|"a" .. two-digit slot .. "0"|"1" scaled) -> integer text, e.g. "d001". */
+static int api_stat(void *state) {
+    uint32_t handle;void *stats,*actor;const char *spec;char out[16];int index,value;
+    if(gettop(state)!=2||!(spec=getstring(state,2))||strlen(spec)!=4)return 0;
+    if((spec[0]!='d'&&spec[0]!='a')||spec[1]<'0'||spec[1]>'1'||spec[2]<'0'||spec[2]>'9'||(spec[3]!='0'&&spec[3]!='1'))return 0;
+    index=(spec[1]-'0')*10+(spec[2]-'0');if(index>13)return 0;
+    if(!stat_context(state,&handle,&stats,&actor))return 0;
+    value=spec[0]=='d'?read_damage(stats,handle,index,spec[3]-'0'):read_armor(stats,handle,index,spec[3]-'0');
+    snprintf(out,sizeof(out),"%d",value);pushstring(state,out);return 1;
+}
+/* stats(handle) -> name, damage raw, damage scaled, armor raw, armor scaled (14 ints each). */
+static int api_stats(void *state) {
+    uint32_t handle;void *stats,*actor;const char *name;char row[256];int kind,scaled,index,used;
+    if(gettop(state)!=1||!stat_context(state,&handle,&stats,&actor))return 0;
+    name=ip_inventory_name(actor,actor_name);if(!name)return 0;
+    pushstring(state,name);
+    for(kind=0;kind<2;++kind)for(scaled=0;scaled<2;++scaled) {
+        used=0;row[0]=0;
+        for(index=0;index<14;++index) {
+            int value=kind?read_armor(stats,handle,index,scaled):read_damage(stats,handle,index,scaled);
+            used+=snprintf(row+used,sizeof(row)-(size_t)used,index?",%d":"%d",value);
+        }
+        pushstring(state,row);
+    }
+    return 5;
+}
 static const struct lua_reg functions[]={
-    {"self_test",api_self_test},{"poll",api_poll},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{NULL,NULL}
+    {"self_test",api_self_test},{"poll",api_poll},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{NULL,NULL}
 };
 static void register_state(void *state) {
     if(!qh_register_balanced(state,"InventoryPlusNative",functions,gettop,register_library,pop_values))supported=0;
@@ -93,6 +132,8 @@ static int resolve_api(void) {
     static const unsigned char push[]={0x8b,0x54,0x24,0x08,0x85,0xd2,0x75,0x10,0x8b,0x4c,0x24,0x04};
     static const unsigned char decode[]={0x53,0x56,0x8b,0x74,0x24,0x10,0x57,0x8b,0x7c,0x24,0x18,0x57};
     static const unsigned char lookup[]={0x8b,0x54,0x24,0x04,0x56,0xf7,0xc2,0x00,0x00,0xff,0x0f,0x74};
+    static const unsigned char damage[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0b,0xbf,0xac,0x1a,0x74,0x01};
+    static const unsigned char armor[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0c,0xbf,0xac,0x1a,0x74,0x01};
     static const unsigned char name[]={0x80,0xb9,0x1c,0x01,0x00,0x00,0x00,0x74,0x0d,0x80,0x7c,0x24};
     base=(uintptr_t)GetModuleHandleA(NULL);dos=(IMAGE_DOS_HEADER*)base;
     if(dos->e_magic!=IMAGE_DOS_SIGNATURE)return 0;
@@ -100,6 +141,8 @@ static int resolve_api(void) {
     if(pe->Signature!=IMAGE_NT_SIGNATURE||pe->FileHeader.Machine!=IMAGE_FILE_MACHINE_I386||pe->FileHeader.TimeDateStamp!=0x63f74827||pe->OptionalHeader.SizeOfImage!=0x0173d000)return 0;
     if(memcmp((void*)VA(0xa9f980),top,sizeof(top))||memcmp((void*)VA(0xa9f9a0),pop,sizeof(pop))||memcmp((void*)VA(0xa9f8b0),string,sizeof(string))||memcmp((void*)VA(0x10adca0),reg,sizeof(reg))||memcmp((void*)VA(0xaa3560),push,sizeof(push)))return 0;
     if(memcmp((void*)VA(0xe5f770),decode,sizeof(decode))||memcmp((void*)VA(0xf23c10),lookup,sizeof(lookup))||memcmp((void*)VA(0xef3b20),name,sizeof(name)))return 0;
+    if(memcmp((void*)VA(0xe42140),damage,sizeof(damage))||memcmp((void*)VA(0xe421d0),armor,sizeof(armor)))return 0;
+    read_damage=(void*)VA(0xe42140);read_armor=(void*)VA(0xe421d0);
     read_actor_handle=(void*)VA(0xe5f770);lookup_actor=(void*)VA(0xf23c10);actor_name=(void*)VA(0xef3b20);
     gettop=(void*)VA(0xa9f980);pop_values=(void*)VA(0xa9f9a0);getstring=(void*)VA(0xa9f8b0);register_library=(void*)VA(0x10adca0);pushstring=(void*)VA(0xaa3560);
     return 1;

@@ -15,9 +15,13 @@ function M.short(text,limit)
  end
  return at>#text and text or (string.sub(text,1,at-1)..'…')
 end
-function M.project(rows,query,order,read_name,fold,status)
+-- read_stat(item_id) -> number|nil serves the numeric orders 'dmg' and 'arm' (high to low).
+-- Unknown values sort after known ones, never as zero; name then snapshot order break ties.
+function M.project(rows,query,order,read_name,fold,status,read_stat)
  assert(type(rows)=='table' and type(query)=='string')
- assert(order=='native' or order=='az' or order=='za')
+ assert(order=='native' or order=='az' or order=='za' or order=='dmg' or order=='arm')
+ local numeric=order=='dmg' or order=='arm'
+ assert(not numeric or type(read_stat)=='function','Stat reader unavailable')
  local needle=fold(query)
  assert(type(needle)=='string','Could not normalize search text')
  local view={rows={},categories={},total=0,matched=0}
@@ -25,6 +29,11 @@ function M.project(rows,query,order,read_name,fold,status)
  local function flush()
   if order~='native' then
    table.sort(group.items,function(a,b)
+    if numeric and a.stat~=b.stat then
+     if a.stat==nil then return false end
+     if b.stat==nil then return true end
+     return a.stat>b.stat
+    end
     if a.key==b.key then return a.ordinal<b.ordinal end
     if order=='za' then return a.key>b.key end
     return a.key<b.key
@@ -52,7 +61,12 @@ function M.project(rows,query,order,read_name,fold,status)
    assert(type(key)=='string','Could not normalize item name')
    view.total=view.total+1
    if needle=='' or string.find(key,needle,1,true)then
-    group.items[#group.items+1]={row=row,key=key,ordinal=ordinal}
+    local stat
+    if numeric then
+     local ok,value=pcall(read_stat,row.item_id)
+     if ok and type(value)=='number' and value==value then stat=value end
+    end
+    group.items[#group.items+1]={row=row,key=key,ordinal=ordinal,stat=stat}
     view.matched=view.matched+1
    end
   end

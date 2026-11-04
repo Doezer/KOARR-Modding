@@ -40,3 +40,16 @@ for i=1,1000 do bag[#bag+1]={item_id=i}end
 v=M.project(bag,'','za',function()return 'same' end,fold,{Bag={collapsed=false}})
 assert(v.matched==1000 and #v.rows==1001)
 for i=1,1000 do assert(v.rows[i+1].item_id==i)end
+-- Numeric orders: high to low, unknown last (never zero), name then ordinal tie-breaks.
+local gear={{header_id='Gear',header_text=1,len=5},{item_id=1},{item_id=2},{item_id=3},{item_id=4},{item_id=5}}
+local gnames={[1]='b',[2]='a',[3]='c',[4]='d',[5]='e'}
+local stats={[1]=10,[2]=10,[3]=0,[4]=nil,[5]=25}
+local function gname(id)return gnames[id]end
+local function gstat(id)if id==4 then error('unreadable')end;return stats[id]end
+local order=M.project(gear,'','dmg',gname,fold,{Gear={collapsed=false}},gstat)
+local ids={};for i=2,#order.rows do ids[#ids+1]=order.rows[i].item_id end
+assert(table.concat(ids,',')=='5,2,1,3,4') -- 25; 10 (a before b); 10; 0 is known and beats unknown 4
+assert(order.matched==5 and gear[2].item_id==1) -- source rows untouched
+assert(not pcall(M.project,gear,'','dmg',gname,fold,{},nil)) -- numeric order needs a reader
+assert(not pcall(M.project,gear,'','nonsense',gname,fold,{},gstat))
+print('Model: numeric orders, unknown values last and tie-breaks passed')

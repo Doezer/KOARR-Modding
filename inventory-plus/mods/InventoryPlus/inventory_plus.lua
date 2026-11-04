@@ -1,4 +1,4 @@
--- Inventory Plus 0.5.1 (Lua-only; native bridge token stays 0.5.0): native category-scoped search and grouped name sorting.
+-- Inventory Plus 0.6.0: native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.5.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -30,9 +30,27 @@ local function wrap(module,name,make)
  S.hooks[#S.hooks+1]={module=module,name=name,original=original,replacement=replacement}
  return true
 end
+-- PROVISIONAL stat sources. The native readers are verified (read-only, 14-slot tables,
+-- 'scaled' selects the modifier-applied value); which slot/mode the item card shows is not.
+-- Compare Ctrl+D output with the card and correct index/scaled here.
+local STATS={
+ dmg={kind='d',index=0,scaled=1,label='Dmg',slots={[2627341]=true,[2010694]=true}},
+ arm={kind='a',index=0,scaled=1,label='Armor',slots={[1070770]=true}},
+}
+local function stat_order_for(slot)
+ if type(N.stat)~='function' then return nil end
+ for order,d in pairs(STATS)do if d.slots[slot] then return order end end
+end
+local function stat_reader(order)
+ local d=STATS[order];local spec=string.format('%s%02d%d',d.kind,d.index,d.scaled)
+ return function(handle)
+  local ok,text=pcall(N.stat,handle,spec)
+  if ok then return tonumber(text)end
+ end
+end
 local reminder,scope
 local function hint()
- local sort=S.order=='az' and 'A-Z' or S.order=='za' and 'Z-A' or ''
+ local sort=S.order=='az' and 'A-Z' or S.order=='za' and 'Z-A' or (STATS[S.order] and STATS[S.order].label) or ''
  if S.query~='' then
   local text=S.matched==0 and 'No matches' or M.short(S.query,6)
   return text..' '..tostring(S.matched)..'/'..tostring(S.total)..(sort~='' and ' '..sort or '')..' | Esc: Clear'
@@ -80,8 +98,8 @@ local function available()
 end
 local function ensure_bridge()
  if S.ready then return true end
- local ok,reply=pcall(N.self_test,'InventoryPlus 0.5.0')
- if not ok or reply~='InventoryPlus 0.5.0'then
+ local ok,reply=pcall(N.self_test,'InventoryPlus 0.6.0')
+ if not ok or reply~='InventoryPlus 0.6.0'then
   if not S.bridge_warning then log('Native version mismatch; replace the complete package.');S.bridge_warning=true end
   return false
  end
@@ -145,8 +163,28 @@ function S.clear_search()
 end
 function S.cycle_sort()
  if not ensure_bridge()then return false end
- S.order=S.order=='native' and 'az' or S.order=='az' and 'za' or 'native'
+ local I=rawget(G,'inventory_win')
+ local sequence={'native','az','za'}
+ local extra=type(I)=='table' and stat_order_for(I.m_selected_slot)
+ if extra then sequence[#sequence+1]=extra end
+ local at=0;for index,order in ipairs(sequence)do if order==S.order then at=index end end
+ S.order=sequence[at%#sequence+1]
  return S.refresh()
+end
+function S.dump_stats()
+ local I,A=rawget(G,'inventory_win'),rawget(G,'ACTOR')
+ if not available() or type(N.stats)~='function' or type(I.get_selected_item)~='function' then return false end
+ local handle=I.get_selected_item()
+ if handle==nil or type(handle)=='string' or type(A)~='table' or type(A.is_valid)~='function' or not A.is_valid(handle) then
+  log('Stats: no valid selected item.');return false
+ end
+ local r=pack(pcall(N.stats,handle))
+ if not r[1] or r.n<6 then log('Stats: item has no readable tables.');return false end
+ log('Stats: item="'..tostring(r[2])..'" slot='..tostring(I.m_selected_slot)..'; columns are slot indices 0..13')
+ log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
+ log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
+ log('Stats: provisional sort keys: damage slot '..STATS.dmg.index..' scaled='..STATS.dmg.scaled..', armor slot '..STATS.arm.index..' scaled='..STATS.arm.scaled)
+ return true
 end
 local function shortcuts(action)
  if tabs and (action=='b' or action=='exiting' or action=='exitingshortcut')then tabs.cancel()end
@@ -160,6 +198,7 @@ local function shortcuts(action)
  if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then tabs.select(index);return true end end end
  if N.poll('Ctrl+F')then S.open_search();return true end
  if N.poll('Ctrl+S')then S.cycle_sort();return true end
+ if N.poll('Ctrl+D')then S.dump_stats();return true end
  return false
 end
 function S.open_search()
@@ -206,6 +245,9 @@ function S.attach()
  -- Project fresh native row tables; never change the actor's inventory arrays.
  wrap(I,'get_surplus_inventory',function(original)return function(...)
   if S.enabled and S.view_slot~=I.m_selected_slot then S.view_slot=I.m_selected_slot;S.category_changed=true end
+  if S.enabled and STATS[S.order] and stat_order_for(I.m_selected_slot)~=S.order then
+   S.order='az';log('Stat sort does not apply to this category; sorting by name.')
+  end
   if not S.enabled or not active()then return original(...)end
   if S.query~=''then remember_categories(I)end
   local changed={}
@@ -217,7 +259,7 @@ function S.attach()
   local raw=pack(pcall(original,...))
   for _,old in ipairs(changed)do old.state.collapsed=old.value end
   if not raw[1]then error(raw[2],0)end
-  local ok,view=pcall(M.project,raw[2],S.query,S.order,item_name,N.fold,I.m_category_status)
+  local ok,view=pcall(M.project,raw[2],S.query,S.order,item_name,N.fold,I.m_category_status,STATS[S.order] and stat_reader(S.order) or nil)
   if not ok then
    S.query='';S.order='native';restore_categories()
    log('Search/sort unavailable; showing native list: '..tostring(view))

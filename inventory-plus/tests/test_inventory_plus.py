@@ -48,6 +48,10 @@ class InventoryPlusTests(unittest.TestCase):
         self.assertIsNotNone(lua, 'Set QH_LUA to Lua 5.1')
         subprocess.run([lua, 'tests/inventory_plus_model.lua'], cwd=ROOT, check=True)
 
+    def test_stat_sort_orders(self):
+        lua = os.environ.get('QH_LUA') or shutil.which('lua5.1') or shutil.which('lua')
+        self.assertIsNotNone(lua)
+        subprocess.run([lua, 'tests/inventory_stat_sort.lua'], cwd=ROOT, check=True)
     def test_preview_package(self):
         spec = importlib.util.spec_from_file_location('ip_package', ROOT / 'tools/package_inventory_plus.py')
         package = importlib.util.module_from_spec(spec)
