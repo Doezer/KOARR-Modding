@@ -514,3 +514,16 @@ selected item so one in-game comparison against the native card can settle it.
 call path itself has not run in the game. The separate stats probe remains for
 diagnosis but is no longer needed for this check.
 
+
+## 0.6.1 and the remaining sort keys (4 November)
+
+Rarity, required level and value are not sortable yet. The wrappers registered
+beside damage/armor (`0x00E8C060`, `0x00E8C130`) have the same `(actor, int, bool)`
+shape and read the same family of stat tables, so they are not those keys, and
+no static evidence ties any other wrapper to rarity, level or value. Their Lua
+names are runtime data, and calling functions by name is not allowed. 0.6.1
+(Lua-only) therefore adds an observation-only step to Ctrl+D: it lists, but never
+calls, ACTOR/TYPE function names that mention value/level/rarity/quality/price/
+cost/gold/worth/tier. The next iteration chooses readers from that list and the
+card, verifying each natively before any sort uses it.
+

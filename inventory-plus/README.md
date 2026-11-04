@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.0 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.1 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -30,7 +30,10 @@ ties fall back to name, then native order. The sort applies within each native
 subcategory header and never changes items. A stat sort resets to Name A-Z when
 you switch to a category it does not apply to. The values come from the game's
 own read-only damage/armor tables through the new native helper (replace the
-whole package, DLL included; the bridge token is now 0.6.0).
+whole package, DLL included; the bridge token is now 0.6.0). 0.6.1 is Lua-only: the
+first Ctrl+D per session also logs the *names* (never calling them) of ACTOR/TYPE
+functions that mention value, level, rarity, quality, price, cost, gold, worth or
+tier, so rarity/required-level/value sorts can target real readers next.
 
 **Provisional:** the native tables hold 14 slots and a raw/scaled mode. Which
 one the item card shows is unverified, so the sort currently uses slot 0, scaled.
@@ -38,8 +41,8 @@ one the item card shows is unverified, so the sort currently uses slot 0, scaled
 choice can be checked against the card. Until then, damage/armor order may not
 match the card. An All view remains planned.
 
-[Download 0.6.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.0-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.0-preview.zip.sha256)
+[Download 0.6.1 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.1-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.1-preview.zip.sha256)
 
 ## Installation
 

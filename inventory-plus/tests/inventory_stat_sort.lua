@@ -7,7 +7,7 @@ InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=fu
  item_name=function(id)return 'item'..id end,
  stat=function(handle,spec)specs[spec]=true;local v=values[handle];if v==nil then return nil end;return tostring(v) end,
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
-ACTOR={is_valid=function()return true end}
+ACTOR={is_valid=function()return true end,get_item_value=function()error('must never be called')end,get_required_level=function()end,unrelated=function()end}
 WINDOW={is_visible=function()return true end,set_label_text=function()end}
 ledger_win={set_reminder=function()end}
 local rows={{header_id='Gear',header_text=1,len=4},{item_id=10},{item_id=20},{item_id=30},{item_id=40}}
@@ -46,6 +46,7 @@ I.m_selected_slot=2627341;fired['Ctrl+D']=true
 local before=order();assert(S.dump_stats() and order()==before)
 local joined=table.concat(logs,'\n')
 assert(joined:find('damage raw    =1,2',1,true) and joined:find('provisional sort keys',1,true))
+assert(joined:find('Names ACTOR: get_item_value get_required_level',1,true) and not joined:find('unrelated',1,true))
 S.detach()
 print=io.write
 print('Stat sort: weapon/armor orders, unknown-last, category reset and dump passed\n')

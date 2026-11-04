@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.0: native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.1 (Lua-only; native bridge stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -171,6 +171,29 @@ function S.cycle_sort()
  S.order=sequence[at%#sequence+1]
  return S.refresh()
 end
+-- Observation only: list (never call) ACTOR/TYPE function names that may read value, level or rarity.
+local function log_candidate_names()
+ local words={'value','level','rarity','quality','price','cost','gold','worth','tier'}
+ for _,module in ipairs({'ACTOR','TYPE'})do
+  local t=rawget(G,module);local found={}
+  if type(t)=='table' then
+   for key,fn in next,t do
+    if type(key)=='string' and type(fn)=='function' and #key<=64 then
+     local lower=string.lower(key)
+     for _,word in ipairs(words)do if string.find(lower,word,1,true)then found[#found+1]=key;break end end
+    end
+   end
+  end
+  table.sort(found)
+  local line={}
+  for index=1,math.min(#found,60)do
+   line[#line+1]=found[index]
+   if #table.concat(line,' ')>160 then log('Names '..module..': '..table.concat(line,' '));line={}end
+  end
+  if #line>0 then log('Names '..module..': '..table.concat(line,' '))end
+  log('Names '..module..': '..#found..' candidates (names only, none called)')
+ end
+end
 function S.dump_stats()
  local I,A=rawget(G,'inventory_win'),rawget(G,'ACTOR')
  if not available() or type(N.stats)~='function' or type(I.get_selected_item)~='function' then return false end
@@ -184,6 +207,7 @@ function S.dump_stats()
  log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
  log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
  log('Stats: provisional sort keys: damage slot '..STATS.dmg.index..' scaled='..STATS.dmg.scaled..', armor slot '..STATS.arm.index..' scaled='..STATS.arm.scaled)
+ if not S.names_logged then S.names_logged=true;log_candidate_names()end
  return true
 end
 local function shortcuts(action)
