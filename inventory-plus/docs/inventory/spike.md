@@ -605,3 +605,16 @@ scale differs, so Value orders correctly only if the card value is a monotone fu
 the cost; the item behind the 69 was not named, so this is unconfirmed. Ctrl+D
 output next to the card values for two named items will settle it.
 
+
+## 0.6.5: Damage and Armor sorts were never offered (5 November)
+
+The tester cycled az, za, lvl, value and never saw Armor. Cause: `has_stats` returned
+`stats_ok ? 1 : 0` from a Lua C function. That return value is the *number of results
+pushed*, and nothing was pushed, so Lua received no number and the `== 1` check was always
+false. The native-backed sorts (Dmg, Armor) depend on that check; the getter-backed ones
+(Req, Value) do not, which is why those appeared. The unit test mock returned a real `1`,
+which is why every test passed. `has_stats` now pushes "1"/"0", Lua compares text, the mock
+returns text, and a source-level test requires the function to push. Other predicates
+(`poll`, `held`, `idle`, `self_test`) return 1 with their argument still on the stack,
+which Lua reads as a truthy value, and were confirmed working in game.
+

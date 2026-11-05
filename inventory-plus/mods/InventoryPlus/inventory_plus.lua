@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.4 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.5 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.4-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.5-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -54,7 +54,7 @@ local function stat_available(order,slot)
   for _,name in ipairs(d.getters or {d.getter})do if type(A[name])~='function' then return false end end
   return true
  end
- return type(N.stat)=='function' and type(N.has_stats)=='function' and N.has_stats()==1
+ return type(N.stat)=='function' and type(N.has_stats)=='function' and tostring(N.has_stats())=='1'
 end
 local function stat_orders_for(slot)
  local list={}

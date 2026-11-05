@@ -5,7 +5,7 @@ InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=fu
  poll=function(s)local v=fired[s];fired[s]=nil;return v and s or nil end,
  item_name=function(id)return 'item'..id end,
  stat=function(handle,spec)specs[spec]=true;local v=({[10]=5,[20]=40,[40]=40})[handle];if v==nil then return nil end;return tostring(v) end,
- has_stats=function()return 1 end,
+ has_stats=function()return '1' end, -- a C function can only answer with a pushed value
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
 local cost={[10]=300,[20]=50,[30]=900,[40]=50}
 local function attr(table_)return function(h)if h==40 then error('unreadable')end;return table_[h] or 0 end end

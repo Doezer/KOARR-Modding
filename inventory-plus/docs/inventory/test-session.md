@@ -1,4 +1,4 @@
-# Inventory Plus 0.6.4: one test session
+# Inventory Plus 0.6.5: one test session
 
 Everything below is unconfirmed in-game. Run it once, in order, and send the
 full framework log plus the numbers marked **[card]**.
@@ -9,7 +9,7 @@ full framework log plus the numbers marked **[card]**.
    `mods/inventory_plus_native.dll`, `mods/InventoryPlus/`.
 2. Remove the stats probe if installed (`mods/inventory_plus_stats_probe*`,
    `mods/InventoryPlusStatsProbe/`): both listen to Ctrl+D.
-3. Extract `InventoryPlus-0.6.4-preview.zip` beside `koa.exe`, merging `mods`.
+3. Extract `InventoryPlus-0.6.5-preview.zip` beside `koa.exe`, merging `mods`.
 4. Start the game fully, load a character with several weapons and armor pieces.
 
 ## Checks

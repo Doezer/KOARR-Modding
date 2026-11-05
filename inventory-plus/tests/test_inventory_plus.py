@@ -20,6 +20,13 @@ class InventoryPlusTests(unittest.TestCase):
                             '-o', binary], cwd=ROOT, check=True)
             subprocess.run([binary], check=True)
 
+    def test_has_stats_pushes_its_answer(self):
+        # Regression: returning a bare 1 from a Lua C function reports one result without
+        # pushing it, so Lua never saw a value and the damage/armor sorts were never offered.
+        source = (ROOT / 'src/inventory_plus/native.c').read_text(encoding='utf-8')
+        body = source.split('static int api_has_stats', 1)[1].split('}', 1)[0]
+        self.assertIn('pushstring', body)
+
     def test_stat_spec_parser(self):
         with tempfile.TemporaryDirectory() as folder:
             binary = str(Path(folder) / 'spec-test')

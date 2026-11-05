@@ -119,7 +119,8 @@ static int api_stats(void *state) {
     }
     return 5;
 }
-static int api_has_stats(void *state) {(void)state;return stats_ok?1:0;}
+/* A Lua C function's return value counts pushed results, so push the answer as text. */
+static int api_has_stats(void *state) {pushstring(state,stats_ok?"1":"0");return 1;}
 static const struct lua_reg functions[]={
     {"self_test",api_self_test},{"poll",api_poll},{"held",api_held},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
 };
