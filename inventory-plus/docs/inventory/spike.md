@@ -527,3 +527,25 @@ calls, ACTOR/TYPE function names that mention value/level/rarity/quality/price/
 cost/gold/worth/tier. The next iteration chooses readers from that list and the
 card, verifying each natively before any sort uses it.
 
+
+## 0.6.2: base-address regression (5 November)
+
+The first 0.6.x game log showed the DLL loaded but `InventoryPlusNative` missing:
+the helper's identity checks failed, so it registered nothing and the adapter
+left vanilla alone. The run's framework addresses were exactly 0x10000 below the
+preferred-base ones, i.e. the same executable loaded at 0x3F0000, not another
+build. 0.6.0 added fingerprints for the damage/armor readers that included an
+absolute operand (`mov edi, 0x1741aac`); the loader rebases it (0x1731aac at that
+base), so the byte comparison failed. 0.6.2 compares the fixed prefix and then the
+operand against the actual base. Every other fingerprint was already
+relocation-free. `tests/test_fingerprints.py` (needs `KOA_EXE` and `pefile`)
+relocates the private executable to three bases and checks every fingerprint in
+both helpers; against the 0.6.1 source it reports exactly the two bad ones.
+Lesson: fingerprint arrays must be checked at a non-preferred base, not only 0x400000.
+
+
+Hardening for other players' PCs: the damage/armor reader fingerprints are now optional. If they ever fail to match, only the stat sorts are disabled (`has_stats` returns 0) and search, name sort, tabs and Back still load. A core-fingerprint mismatch (different game build) still disables the helper, and the log now says so: 'unsupported game build or incomplete install'.
+
+
+Verification added in 0.6.2: `tools/verify_inventory_plus_stats.py` runs the game's real reader code (0x00E42140/0x00E421D0) in an x86 emulator at three image bases against a synthetic component (180 cases: raw/scaled, slot 12, override pointers, invalid component, stack balance), alongside the existing name-path emulation. The spec parser has a C unit test. In-game confirmation of the whole flow is still pending.
+

@@ -7,10 +7,12 @@
 #include "../../../common/src/vm_bridge.h"
 #include "input.h"
 #include "item_name.h"
+#include "stat_spec.h"
 _Static_assert(sizeof(struct ip_afstring)==12,"Engine afstring layout");
 #define VA(address) (base+(uintptr_t)(address)-0x00400000u)
 static uintptr_t base;
 static int supported;
+static int stats_ok; /* optional damage/armor readers; never gates the core mod */
 static int (__cdecl *gettop)(void*);
 static const char *(__cdecl *getstring)(void*,int);
 static void (__cdecl *register_library)(void*,const char*,const struct lua_reg*);
@@ -88,18 +90,16 @@ static int stat_context(void *state,uint32_t *handle,void **stats,void **actor) 
 }
 /* stat(handle, "d"|"a" .. two-digit slot .. "0"|"1" scaled) -> integer text, e.g. "d001". */
 static int api_stat(void *state) {
-    uint32_t handle;void *stats,*actor;const char *spec;char out[16];int index,value;
-    if(gettop(state)!=2||!(spec=getstring(state,2))||strlen(spec)!=4)return 0;
-    if((spec[0]!='d'&&spec[0]!='a')||spec[1]<'0'||spec[1]>'1'||spec[2]<'0'||spec[2]>'9'||(spec[3]!='0'&&spec[3]!='1'))return 0;
-    index=(spec[1]-'0')*10+(spec[2]-'0');if(index>13)return 0;
+    uint32_t handle;void *stats,*actor;char out[16];int armor,index,scaled,value;
+    if(!stats_ok||gettop(state)!=2||!ip_parse_stat_spec(getstring(state,2),&armor,&index,&scaled))return 0;
     if(!stat_context(state,&handle,&stats,&actor))return 0;
-    value=spec[0]=='d'?read_damage(stats,handle,index,spec[3]-'0'):read_armor(stats,handle,index,spec[3]-'0');
+    value=armor?read_armor(stats,handle,index,scaled):read_damage(stats,handle,index,scaled);
     snprintf(out,sizeof(out),"%d",value);pushstring(state,out);return 1;
 }
 /* stats(handle) -> name, damage raw, damage scaled, armor raw, armor scaled (14 ints each). */
 static int api_stats(void *state) {
     uint32_t handle;void *stats,*actor;const char *name;char row[256];int kind,scaled,index,used;
-    if(gettop(state)!=1||!stat_context(state,&handle,&stats,&actor))return 0;
+    if(!stats_ok||gettop(state)!=1||!stat_context(state,&handle,&stats,&actor))return 0;
     name=ip_inventory_name(actor,actor_name);if(!name)return 0;
     pushstring(state,name);
     for(kind=0;kind<2;++kind)for(scaled=0;scaled<2;++scaled) {
@@ -112,8 +112,9 @@ static int api_stats(void *state) {
     }
     return 5;
 }
+static int api_has_stats(void *state) {(void)state;return stats_ok?1:0;}
 static const struct lua_reg functions[]={
-    {"self_test",api_self_test},{"poll",api_poll},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{NULL,NULL}
+    {"self_test",api_self_test},{"poll",api_poll},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
 };
 static void register_state(void *state) {
     if(!qh_register_balanced(state,"InventoryPlusNative",functions,gettop,register_library,pop_values))supported=0;
@@ -132,8 +133,8 @@ static int resolve_api(void) {
     static const unsigned char push[]={0x8b,0x54,0x24,0x08,0x85,0xd2,0x75,0x10,0x8b,0x4c,0x24,0x04};
     static const unsigned char decode[]={0x53,0x56,0x8b,0x74,0x24,0x10,0x57,0x8b,0x7c,0x24,0x18,0x57};
     static const unsigned char lookup[]={0x8b,0x54,0x24,0x04,0x56,0xf7,0xc2,0x00,0x00,0xff,0x0f,0x74};
-    static const unsigned char damage[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0b,0xbf,0xac,0x1a,0x74,0x01};
-    static const unsigned char armor[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0c,0xbf,0xac,0x1a,0x74,0x01};
+    static const unsigned char damage[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0b,0xbf}; /* then a relocated imm32 */
+    static const unsigned char armor[]={0x83,0xec,0x08,0x8b,0x44,0x24,0x0c,0x57,0x6a,0x0c,0xbf}; /* then a relocated imm32 */
     static const unsigned char name[]={0x80,0xb9,0x1c,0x01,0x00,0x00,0x00,0x74,0x0d,0x80,0x7c,0x24};
     base=(uintptr_t)GetModuleHandleA(NULL);dos=(IMAGE_DOS_HEADER*)base;
     if(dos->e_magic!=IMAGE_DOS_SIGNATURE)return 0;
@@ -141,8 +142,12 @@ static int resolve_api(void) {
     if(pe->Signature!=IMAGE_NT_SIGNATURE||pe->FileHeader.Machine!=IMAGE_FILE_MACHINE_I386||pe->FileHeader.TimeDateStamp!=0x63f74827||pe->OptionalHeader.SizeOfImage!=0x0173d000)return 0;
     if(memcmp((void*)VA(0xa9f980),top,sizeof(top))||memcmp((void*)VA(0xa9f9a0),pop,sizeof(pop))||memcmp((void*)VA(0xa9f8b0),string,sizeof(string))||memcmp((void*)VA(0x10adca0),reg,sizeof(reg))||memcmp((void*)VA(0xaa3560),push,sizeof(push)))return 0;
     if(memcmp((void*)VA(0xe5f770),decode,sizeof(decode))||memcmp((void*)VA(0xf23c10),lookup,sizeof(lookup))||memcmp((void*)VA(0xef3b20),name,sizeof(name)))return 0;
-    if(memcmp((void*)VA(0xe42140),damage,sizeof(damage))||memcmp((void*)VA(0xe421d0),armor,sizeof(armor)))return 0;
-    read_damage=(void*)VA(0xe42140);read_armor=(void*)VA(0xe421d0);
+    /* Optional stat readers: a mismatch disables only damage/armor sorting. The imm32 is an
+       absolute address the loader rebases, so compare it to the actual base. */
+    stats_ok=!memcmp((void*)VA(0xe42140),damage,sizeof(damage))&&!memcmp((void*)VA(0xe421d0),armor,sizeof(armor))
+        &&*(uint32_t*)(VA(0xe42140)+sizeof(damage))==(uint32_t)VA(0x1741aac)
+        &&*(uint32_t*)(VA(0xe421d0)+sizeof(armor))==(uint32_t)VA(0x1741aac);
+    if(stats_ok){read_damage=(void*)VA(0xe42140);read_armor=(void*)VA(0xe421d0);}
     read_actor_handle=(void*)VA(0xe5f770);lookup_actor=(void*)VA(0xf23c10);actor_name=(void*)VA(0xef3b20);
     gettop=(void*)VA(0xa9f980);pop_values=(void*)VA(0xa9f9a0);getstring=(void*)VA(0xa9f8b0);register_library=(void*)VA(0x10adca0);pushstring=(void*)VA(0xaa3560);
     return 1;

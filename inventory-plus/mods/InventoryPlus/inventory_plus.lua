@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.1 (Lua-only; native bridge stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.2 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -6,11 +6,11 @@ if previous and previous.enabled then previous.attach();return previous end
 local function log(message)print('[InventoryPlus] '..message)end
 local N=rawget(G,'InventoryPlusNative')
 if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function' or type(N.idle)~='function' or type(N.fold)~='function' or type(N.item_name)~='function' then
- log('Native inventory helper unavailable; no inventory changes installed.');return false
+ log('Native inventory helper unavailable (unsupported game build or incomplete install); no inventory changes installed.');return false
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.1-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.2-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -38,7 +38,7 @@ local STATS={
  arm={kind='a',index=0,scaled=1,label='Armor',slots={[1070770]=true}},
 }
 local function stat_order_for(slot)
- if type(N.stat)~='function' then return nil end
+ if type(N.stat)~='function' or type(N.has_stats)~='function' or N.has_stats()~=1 then return nil end
  for order,d in pairs(STATS)do if d.slots[slot] then return order end end
 end
 local function stat_reader(order)

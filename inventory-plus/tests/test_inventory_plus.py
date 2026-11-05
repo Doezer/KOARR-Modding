@@ -20,6 +20,14 @@ class InventoryPlusTests(unittest.TestCase):
                             '-o', binary], cwd=ROOT, check=True)
             subprocess.run([binary], check=True)
 
+    def test_stat_spec_parser(self):
+        with tempfile.TemporaryDirectory() as folder:
+            binary = str(Path(folder) / 'spec-test')
+            subprocess.run(['cc', '-std=c99', '-Wall', '-Wextra', '-Werror',
+                            '-Isrc/inventory_plus', 'tests/inventory_plus_stat_spec.c',
+                            '-o', binary], cwd=ROOT, check=True)
+            subprocess.run([binary], check=True)
+
     def test_native_name_borrowing_and_invalid_items(self):
         with tempfile.TemporaryDirectory() as folder:
             binary = str(Path(folder) / 'names-test')

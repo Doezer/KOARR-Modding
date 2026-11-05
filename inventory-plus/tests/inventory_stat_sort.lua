@@ -6,6 +6,7 @@ InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=fu
  poll=function(s)local v=fired[s];fired[s]=nil;return v and s or nil end,
  item_name=function(id)return 'item'..id end,
  stat=function(handle,spec)specs[spec]=true;local v=values[handle];if v==nil then return nil end;return tostring(v) end,
+ has_stats=function()return 1 end,
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
 ACTOR={is_valid=function()return true end,get_item_value=function()error('must never be called')end,get_required_level=function()end,unrelated=function()end}
 WINDOW={is_visible=function()return true end,set_label_text=function()end}
