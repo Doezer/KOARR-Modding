@@ -76,6 +76,14 @@ for _=1,4 do T.update()end
 assert(not S.navigating and #tree.m_path==0 and tree.m_window.visible)
 -- Other ledger sections retain the original navigation window.
 tree.m_window.visible=true;T.update();assert(tree.m_window.visible)
+-- Regression: the Weapons subtree has no parent links in the game. The route comes from
+-- `children`, and being inside Inventory comes from the native path, never from `parent`.
+local saved_parent=weapons.parent
+weapons.parent=nil;for _,c in ipairs(weapons.children)do c.parent=nil end
+I.m_selected_slot=1070770;I.m_list_wrapper.visible=true;tree.m_path={4242793,1070770};tree.m_node_load_in_progress=false
+assert(T.select(1) and S.navigating and T.pending.route[1]==4242793 and T.pending.route[3]==2627341)
+T.cancel()
+weapons.parent=saved_parent;for _,c in ipairs(weapons.children)do c.parent=weapons end
 -- A non-Back exit (a ledger shortcut jump) must not strand the hidden tree.
 tree.m_path={4242793};I.m_list_wrapper.visible=true;I.m_selected_slot=2627341
 T.update();assert(not tree.m_window.visible)

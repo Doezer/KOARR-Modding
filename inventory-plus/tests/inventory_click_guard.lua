@@ -10,8 +10,9 @@ InventoryPlusNavigationV2={create=function()
   return false
  end}
 end}
+local chord=false
 InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,
- poll=function()end,idle=function()return true end,item_name=function()return 'Item'end}
+ held=function(s)return chord and s or nil end,poll=function()end,idle=function()return true end,item_name=function()return 'Item'end}
 WINDOW={is_visible=function()return true end}
 ledger_win={on_update_event=function()ledger_frames=ledger_frames+1;return nil,'frame'end,
  on_button_event_selection=function()button_events=button_events+1 end,
@@ -39,5 +40,13 @@ assert(not capture)
 ledger_win.on_button_event_selection('DOWN',{})
 inventory_win.equip_selected();inventory_win.on_update_event()
 assert(button_events==1 and actions==2 and frames==1)
+-- The game's own digit hotkeys (1/2 equip) must not act while a Ctrl+digit chord is held.
+chord=true;local before_actions=actions
+ledger_win.on_inputdeviceaction_event(nil,'1')
+local digit={info='1'};inventory_win.handle_input(digit);inventory_win.equip_selected()
+assert(actions==before_actions and digit.handled)
+ledger_win.on_inputdeviceaction_event(nil,'b');assert(actions==before_actions+1) -- Back is never swallowed
+chord=false
+ledger_win.on_inputdeviceaction_event(nil,'1');assert(actions==before_actions+2) -- plain 1 stays native
 S.detach()
 print('Tab click isolation: ledger interception, retargeted release, action suppression, Back and normal-input recovery passed')

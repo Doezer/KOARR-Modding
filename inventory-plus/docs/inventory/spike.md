@@ -577,3 +577,31 @@ Findings and changes:
   whether the click reaches the tab, whether the route is refused, or where the
   native traversal stalls. Ctrl+1 and Ctrl+2 exercise the same path without the mouse.
 
+
+## 0.6.4 from the 0.6.3 game log (5 November)
+
+The `[nav]` lines found the weapon-tab bug exactly: `tab 1 refused: route does not
+reach the tree root`, for Primary and Secondary only. The route was built by walking
+`parent` links from the target; the Weapons subtree has none (while `find_node` and
+`children` do reach it). The route now comes from a depth-first walk of `children` from
+`m_tree`, and "inside Inventory" comes from the native path (`m_path[1] == 4242793`)
+instead of a parent chain. A regression test builds a Weapons subtree without parents
+and fails on 0.6.3. The earlier "Primary by default" entry silently fell back to Armor
+because of the same refusal.
+
+Ctrl+1 equipped the hovered item: the game binds the digit keys 1 and 2 to equipping.
+The frame poll consumed our shortcut edge first, so the game's own key event reached the
+equip action afterward. The helper gains `held("Ctrl+N")`, a real-time chord query that
+does not consume the edge; while a chord is held (and until all keys are up) the
+adapter swallows every non-Back ledger and inventory action, including equip. Plain 1
+and 2 keep their native behavior. Back is never swallowed.
+
+Card comparison: required "8 finesse" on the card while `get_level_requirement` read 0, so
+the card shows an attribute requirement. The Req sort now takes the largest of the
+might, finesse, intellect and level requirements (all single-handle getters, read in
+Transmog's `req_of`); Ctrl+D logs all four. Value: the card showed 69 while
+`get_item_cost` read 1803 (Boiled Leather Hood) and 84762 (Cap of the Wanderer). The
+scale differs, so Value orders correctly only if the card value is a monotone function of
+the cost; the item behind the 69 was not named, so this is unconfirmed. Ctrl+D
+output next to the card values for two named items will settle it.
+

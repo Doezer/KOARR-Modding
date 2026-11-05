@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.3 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.4 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -25,7 +25,7 @@ order, and the first few distinct button event names are written once to the log
 for diagnosis. The footer keeps the tab hint while a sort is active.
 **0.6.0 adds provisional damage and armor sorting.** Ctrl+S now cycles native
 order, Name A-Z, Name Z-A and, where they apply, **Damage** (Primary/Secondary),
-**Armor** (Armor), **Lvl** (required level; weapons, armor, accessories) and
+**Armor** (Armor), **Req** (attribute requirement such as "8 Finesse", or level requirement, whichever is largest; weapons, armor, accessories) and
 **Value** (item cost; every category), all high to low. Unreadable values sort last, never as zero;
 ties fall back to name, then native order. The sort applies within each native
 subcategory header and never changes items. A stat sort resets to Name A-Z when
@@ -44,8 +44,8 @@ one the item card shows is unverified, so the sort currently uses slot 0, scaled
 choice can be checked against the card. Until then, damage/armor order may not
 match the card. An All view remains planned.
 
-[Download 0.6.3 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.3-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.3-preview.zip.sha256)
+[Download 0.6.4 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.4-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.4-preview.zip.sha256)
 
 ## Installation
 

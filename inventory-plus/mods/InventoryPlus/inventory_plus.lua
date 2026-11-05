@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.3 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.4 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.3-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.4-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -31,7 +31,7 @@ local function wrap(module,name,make)
  return true
 end
 -- Numeric sort sources (all high to low). dmg/arm read the game's native 14-slot tables
--- through the helper; lvl/val call ACTOR getters exactly as other working mods do
+-- through the helper; req/val call ACTOR getters exactly as other working mods do
 -- (single item handle, numeric result). Which values the item card shows is checked
 -- with Ctrl+D; slot/mode below are provisional until that comparison is done.
 local WEAPONS={[2627341]=true,[2010694]=true}
@@ -41,16 +41,18 @@ local ALL={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true,[7304644]
 local STATS={
  dmg={kind='d',index=0,scaled=1,label='Dmg',slots=WEAPONS},
  arm={kind='a',index=0,scaled=1,label='Armor',slots=ARMOR},
- lvl={getter='get_level_requirement',label='Lvl',slots=GEAR},
+ req={getters={'get_might_requirement','get_finesse_requirement','get_intellect_requirement','get_level_requirement'},label='Req',slots=GEAR},
  val={getter='get_item_cost',label='Value',slots=ALL},
 }
-local STAT_ORDER={'dmg','arm','lvl','val'}
+local STAT_ORDER={'dmg','arm','req','val'}
 local function stat_available(order,slot)
  local d=STATS[order]
  if not d or not d.slots[slot] then return false end
- if d.getter then
+ if d.getter or d.getters then
   local A=rawget(G,'ACTOR')
-  return type(A)=='table' and type(A[d.getter])=='function'
+  if type(A)~='table' then return false end
+  for _,name in ipairs(d.getters or {d.getter})do if type(A[name])~='function' then return false end end
+  return true
  end
  return type(N.stat)=='function' and type(N.has_stats)=='function' and N.has_stats()==1
 end
@@ -61,11 +63,16 @@ local function stat_orders_for(slot)
 end
 local function stat_reader(order)
  local d=STATS[order]
- if d.getter then
-  local fn=rawget(G,'ACTOR')[d.getter]
+ if d.getter or d.getters then
+  local A=rawget(G,'ACTOR');local names=d.getters or {d.getter}
+  -- A single number per item; an item shows at most one requirement, so take the largest.
   return function(handle)
-   local ok,value=pcall(fn,handle)
-   if ok then return tonumber(value)end
+   local best
+   for _,name in ipairs(names)do
+    local ok,value=pcall(A[name],handle);value=ok and tonumber(value)
+    if value and (not best or value>best)then best=value end
+   end
+   return best
   end
  end
  local spec=string.format('%s%02d%d',d.kind,d.index,d.scaled)
@@ -227,9 +234,19 @@ function S.dump_stats()
  if type(A)=='table' then
   local function read(name)local f=A[name];if type(f)=='function' then local ok,v=pcall(f,handle);return ok and tostring(v) or 'error' end;return 'n/a' end
   log('Stats: get_item_cost='..read('get_item_cost')..' get_level_requirement='..read('get_level_requirement')..' get_item_level='..read('get_item_level'))
+  log('Stats: requirements might='..read('get_might_requirement')..' finesse='..read('get_finesse_requirement')..' intellect='..read('get_intellect_requirement'))
  end
  return true
 end
+-- The game binds the digits 1 and 2 to equipping the hovered item. While a Ctrl+digit tab chord is
+-- held (and until every key is up) the game's own copy of that key event must not reach it,
+-- whichever of our frame poll or the game's event is processed first. Back is never swallowed.
+local function chord_held()
+ if type(N.held)~='function' then return false end
+ for index=1,7 do if N.held('Ctrl+'..index)then return true end end
+ return false
+end
+local function chord_active()return S.key_guard==true or chord_held()end
 local function shortcuts(action)
  if tabs and (action=='b' or action=='exiting' or action=='exitingshortcut')then tabs.cancel()end
  if not available()then return false end
@@ -239,7 +256,7 @@ local function shortcuts(action)
   local key=string.lower(action)
   if key=='b' or key=='exiting' or key=='exitingshortcut'then S.back_guard=true;S.clear_search();return true end
  end
- if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then tabs.select(index);return true end end end
+ if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then S.key_guard=true;tabs.select(index);return true end end end
  if N.poll('Ctrl+F')then S.open_search();return true end
  if N.poll('Ctrl+S')then S.cycle_sort();return true end
  if N.poll('Ctrl+D')then S.dump_stats();return true end
@@ -278,7 +295,9 @@ function S.attach()
  -- from the still-open ledger so it can finish entering the destination.
  local ledger=rawget(G,'ledger_win')
  wrap(ledger,'on_update_event',function(original)return function(...)
-  local result=pack(original(...));update_tabs();return returns(result)
+  local result=pack(original(...))
+  if S.key_guard and N.idle('InventoryPlus')then S.key_guard=false end
+  update_tabs();return returns(result)
  end end)
  -- The ledger sees button events before forwarding them to inventory. Stop
  -- tab events here so native tree hit testing cannot also activate a category.
@@ -388,6 +407,7 @@ function S.attach()
   if tabs and (action=='b' or action=='exiting' or action=='exitingshortcut')then tabs.cancel()end
   if shortcuts(action)then return end
   if back and tabs and type(tabs.back)=='function'and tabs.back()then return end
+  if S.enabled and not back and chord_active()then return end
   return original(window,action,...)
  end end)
  wrap(I,'handle_input',function(original)return function(input,...)
@@ -403,6 +423,7 @@ function S.attach()
    if type(input)=='table'then input.handled=true end;return
   end
   if S.enabled and (S.editing or S.back_guard)then if type(input)=='table'then input.handled=true end;return end
+  if S.enabled and not back and chord_active()then if type(input)=='table'then input.handled=true end;return end
   return original(input,...)
  end end)
  for _,name in ipairs({'on_button_event_selection','on_mouse_event_scroll','on_mouse_event_tooltip',
@@ -413,6 +434,7 @@ function S.attach()
   wrap(I,name,function(original)return function(...)
    if S.enabled and tabs and tabs.owns_click()then return end
    if S.enabled and (S.editing or S.back_guard)then return end
+   if S.enabled and chord_active()then return end
    if S.enabled and S.query~='' and action_name=='confirm_destroy_junk'then
     log('Clear search before destroying all junk.');return
    end
@@ -460,7 +482,7 @@ function S.detach()
  local name=rawget(G,'name_win')
  if S.editing and type(name)=='table' and name.m_callback==S.callback and name.m_inited and type(name.cancel_name)=='function'then pcall(name.cancel_name)end
  if tabs then tabs.detach()end
- S.editing=false;S.closing=false;S.back_guard=false;S.callback=nil;S.pending_query=nil;S.query='';S.order='native';restore_categories();restore_hint()
+ S.editing=false;S.closing=false;S.back_guard=false;S.key_guard=false;S.callback=nil;S.pending_query=nil;S.query='';S.order='native';restore_categories();restore_hint()
  local I=rawget(G,'inventory_win')
  if type(I)=='table'and I.m_inited and I.m_list and type(I.rebuild_list_win)=='function'then pcall(I.rebuild_list_win)end
  for i=#S.hooks,1,-1 do local h=S.hooks[i];if h.module[h.name]==h.replacement then h.module[h.name]=h.original end end

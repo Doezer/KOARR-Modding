@@ -46,6 +46,18 @@ function M.create(S,log,N)
   end
   return tree,I,W
  end
+ local function find_route(tree,id)
+  local function walk(node,trail,depth)
+   if depth>8 or type(node)~='table' then return end
+   for _,child in ipairs(node.children or {})do
+    trail[#trail+1]=child
+    if child.id_string==id then return trail end
+    local found=walk(child,trail,depth+1);if found then return found end
+    trail[#trail]=nil
+   end
+  end
+  return walk(tree.m_tree,{},1)
+ end
  local function busy_reason()
   local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
   if not S.enabled then return 'disabled' end
@@ -64,33 +76,29 @@ function M.create(S,log,N)
   if not tree then return refuse('ledger tree unavailable')end
   if not I.m_list_wrapper then return refuse('no item list')end
   if not entry and not W.is_visible(I.m_list_wrapper)then return refuse('item list hidden')end
-  local node=tree:find_node(d.id)
-  if not node then return refuse('node '..tostring(d.id)..' not found in tree')end
-  if node.disabled then return refuse('node '..tostring(d.id)..' disabled')end
+  -- Build the route from the root through `children`, as find_node does: `parent` links are
+  -- not reliable (the Weapons subtree has none), so they must not decide the route.
+  local trail=find_route(tree,d.id)
+  if not trail then return refuse('node '..tostring(d.id)..' not found in tree')end
   if I.m_selected_slot==d.id and W.is_visible(I.m_list_wrapper)then return true end
-  local route={};local cursor=node
-  for _=1,12 do
-   if not cursor or not cursor.parent then break end
-   if cursor.disabled then return refuse('ancestor '..tostring(cursor.id_string)..' disabled')end
-   table.insert(route,1,cursor.id_string);cursor=cursor.parent
+  local route={}
+  for _,step in ipairs(trail)do
+   if step.disabled then return refuse('node '..tostring(step.id_string)..' disabled')end
+   route[#route+1]=step.id_string
   end
-  if cursor~=tree.m_tree then return refuse('route does not reach the tree root')end
   note('tab '..tostring(index)..' route '..table.concat(route,'>')..' from path '..table.concat(tree.m_path or {},'>'))
   T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree}
   S.navigating=true;return true
  end
  function T.select(index)return select_category(index,false)end
- local function in_inventory(node)
-  for _=1,12 do
-   if not node then return false end
-   if node.id_string==4242793 then return true end
-   node=node.parent
-  end
-  return false
+ -- The native path holds ids from the root; parent links are not reliable for every node.
+ local function in_inventory(tree)
+  local path=tree.m_path
+  return type(path)=='table' and path[1]==4242793
  end
  function T.back()
   local tree=tree_context()
-  if S.editing or S.back_guard or not tree or not in_inventory(tree:get_cur_node())then return false end
+  if S.editing or S.back_guard or not tree or not in_inventory(tree)then return false end
   T.cancel();T.click_owned=false;T.exiting={tree=tree,frames=0};S.navigating=true;return true
  end
  -- Give the native category menu back instead of leaving a blank hidden page.
@@ -105,7 +113,7 @@ function M.create(S,log,N)
    local p=T.exiting;p.frames=p.frames+1
    if tree~=p.tree or p.frames>180 then T.exiting=nil;S.navigating=false;return end
    if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
-   if in_inventory(tree:get_cur_node())then tree:go_up_a_level()
+   if in_inventory(tree)then tree:go_up_a_level()
    else
     T.exiting=nil;S.navigating=false;T.close();T.hidden_tree=nil
     if type(tree.show)=='function'then tree:show()end
@@ -113,7 +121,7 @@ function M.create(S,log,N)
    return
   end
   local node=tree:get_cur_node()
-  if not in_inventory(node)then
+  if not in_inventory(tree)then
    -- Any exit (Back, a ledger shortcut jump) must give the tree back if we hid it.
    T.native_menu=false
    if T.hidden_tree then

@@ -42,6 +42,13 @@ static int api_poll(void *state) {
     return ip_search_pressed(&shortcuts[key],focused(),down(VK_CONTROL),down(key),
                              down(VK_MENU)||down(VK_LWIN)||down(VK_RWIN),down(VK_SHIFT));
 }
+/* Real-time chord state without consuming the shortcut edge: lets the Lua adapter swallow the
+ * game's own digit hotkeys (1/2 equip) while Ctrl+digit is held, whichever event arrives first. */
+static int api_held(void *state) {
+    const char *s=argument(state);
+    if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||s[5]<'1'||s[5]>'7'||!focused())return 0;
+    return down(VK_CONTROL)&&down((unsigned char)s[5])?1:0;
+}
 static int api_idle(void *state) {
     int code;
     if(!argument(state)||!focused())return 0;
@@ -114,7 +121,7 @@ static int api_stats(void *state) {
 }
 static int api_has_stats(void *state) {(void)state;return stats_ok?1:0;}
 static const struct lua_reg functions[]={
-    {"self_test",api_self_test},{"poll",api_poll},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
+    {"self_test",api_self_test},{"poll",api_poll},{"held",api_held},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
 };
 static void register_state(void *state) {
     if(!qh_register_balanced(state,"InventoryPlusNative",functions,gettop,register_library,pop_values))supported=0;
