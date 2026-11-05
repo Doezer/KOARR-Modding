@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.2 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.3 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.2-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.3-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -30,36 +30,76 @@ local function wrap(module,name,make)
  S.hooks[#S.hooks+1]={module=module,name=name,original=original,replacement=replacement}
  return true
 end
--- PROVISIONAL stat sources. The native readers are verified (read-only, 14-slot tables,
--- 'scaled' selects the modifier-applied value); which slot/mode the item card shows is not.
--- Compare Ctrl+D output with the card and correct index/scaled here.
+-- Numeric sort sources (all high to low). dmg/arm read the game's native 14-slot tables
+-- through the helper; lvl/val call ACTOR getters exactly as other working mods do
+-- (single item handle, numeric result). Which values the item card shows is checked
+-- with Ctrl+D; slot/mode below are provisional until that comparison is done.
+local WEAPONS={[2627341]=true,[2010694]=true}
+local ARMOR={[1070770]=true}
+local GEAR={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true}
+local ALL={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true,[7304644]=true,[911336]=true,[607556]=true}
 local STATS={
- dmg={kind='d',index=0,scaled=1,label='Dmg',slots={[2627341]=true,[2010694]=true}},
- arm={kind='a',index=0,scaled=1,label='Armor',slots={[1070770]=true}},
+ dmg={kind='d',index=0,scaled=1,label='Dmg',slots=WEAPONS},
+ arm={kind='a',index=0,scaled=1,label='Armor',slots=ARMOR},
+ lvl={getter='get_level_requirement',label='Lvl',slots=GEAR},
+ val={getter='get_item_cost',label='Value',slots=ALL},
 }
-local function stat_order_for(slot)
- if type(N.stat)~='function' or type(N.has_stats)~='function' or N.has_stats()~=1 then return nil end
- for order,d in pairs(STATS)do if d.slots[slot] then return order end end
+local STAT_ORDER={'dmg','arm','lvl','val'}
+local function stat_available(order,slot)
+ local d=STATS[order]
+ if not d or not d.slots[slot] then return false end
+ if d.getter then
+  local A=rawget(G,'ACTOR')
+  return type(A)=='table' and type(A[d.getter])=='function'
+ end
+ return type(N.stat)=='function' and type(N.has_stats)=='function' and N.has_stats()==1
+end
+local function stat_orders_for(slot)
+ local list={}
+ for _,order in ipairs(STAT_ORDER)do if stat_available(order,slot)then list[#list+1]=order end end
+ return list
 end
 local function stat_reader(order)
- local d=STATS[order];local spec=string.format('%s%02d%d',d.kind,d.index,d.scaled)
+ local d=STATS[order]
+ if d.getter then
+  local fn=rawget(G,'ACTOR')[d.getter]
+  return function(handle)
+   local ok,value=pcall(fn,handle)
+   if ok then return tonumber(value)end
+  end
+ end
+ local spec=string.format('%s%02d%d',d.kind,d.index,d.scaled)
  return function(handle)
   local ok,text=pcall(N.stat,handle,spec)
   if ok then return tonumber(text)end
  end
 end
 local reminder,scope
+-- The footer shares its row with native buttons; text past this width slides under them.
+local HINT_WIDTH=34
+local function width(text)
+ local n=0
+ for i=1,#text do local b=string.byte(text,i);if b<128 or b>=192 then n=n+1 end end
+ return n
+end
 local function hint()
  local sort=S.order=='az' and 'A-Z' or S.order=='za' and 'Z-A' or (STATS[S.order] and STATS[S.order].label) or ''
  if S.query~='' then
-  local text=S.matched==0 and 'No matches' or M.short(S.query,6)
-  return text..' '..tostring(S.matched)..'/'..tostring(S.total)..(sort~='' and ' '..sort or '')..' | Esc: Clear'
+  local counts=tostring(S.matched)..'/'..tostring(S.total)
+  local tail=(sort~='' and ' '..sort or '')..' | Esc: Clear'
+  local limit,text=6
+  repeat
+   text=(S.matched==0 and 'No match' or M.short(S.query,limit))..' '..counts..tail
+   limit=limit-1
+  until width(text)<=HINT_WIDTH or limit<1
+  return text
  end
  if tabs and #tabs.windows>0 then
-  return (sort~='' and sort..' | ' or '')..'Ctrl+1-7 Tabs | Ctrl+F/S Find/Sort'
+  return sort~='' and (sort..' | Ctrl+1-7 Tabs | Ctrl+F/S') or 'Ctrl+1-7 Tabs | Ctrl+F/S Find/Sort'
  end
  return sort~='' and (sort..' | Ctrl+F: Find | Ctrl+S') or 'Ctrl+F: Find | Ctrl+S: Sort'
 end
+S.footer_text=hint -- exposed so tests can bound the width
 local function update_hint()
  if reminder and S.enabled then reminder.write(reminder.label,hint())end
 end
@@ -165,34 +205,10 @@ function S.cycle_sort()
  if not ensure_bridge()then return false end
  local I=rawget(G,'inventory_win')
  local sequence={'native','az','za'}
- local extra=type(I)=='table' and stat_order_for(I.m_selected_slot)
- if extra then sequence[#sequence+1]=extra end
+ if type(I)=='table' then for _,order in ipairs(stat_orders_for(I.m_selected_slot))do sequence[#sequence+1]=order end end
  local at=0;for index,order in ipairs(sequence)do if order==S.order then at=index end end
  S.order=sequence[at%#sequence+1]
  return S.refresh()
-end
--- Observation only: list (never call) ACTOR/TYPE function names that may read value, level or rarity.
-local function log_candidate_names()
- local words={'value','level','rarity','quality','price','cost','gold','worth','tier'}
- for _,module in ipairs({'ACTOR','TYPE'})do
-  local t=rawget(G,module);local found={}
-  if type(t)=='table' then
-   for key,fn in next,t do
-    if type(key)=='string' and type(fn)=='function' and #key<=64 then
-     local lower=string.lower(key)
-     for _,word in ipairs(words)do if string.find(lower,word,1,true)then found[#found+1]=key;break end end
-    end
-   end
-  end
-  table.sort(found)
-  local line={}
-  for index=1,math.min(#found,60)do
-   line[#line+1]=found[index]
-   if #table.concat(line,' ')>160 then log('Names '..module..': '..table.concat(line,' '));line={}end
-  end
-  if #line>0 then log('Names '..module..': '..table.concat(line,' '))end
-  log('Names '..module..': '..#found..' candidates (names only, none called)')
- end
 end
 function S.dump_stats()
  local I,A=rawget(G,'inventory_win'),rawget(G,'ACTOR')
@@ -207,7 +223,11 @@ function S.dump_stats()
  log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
  log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
  log('Stats: provisional sort keys: damage slot '..STATS.dmg.index..' scaled='..STATS.dmg.scaled..', armor slot '..STATS.arm.index..' scaled='..STATS.arm.scaled)
- if not S.names_logged then S.names_logged=true;log_candidate_names()end
+ local A=rawget(G,'ACTOR')
+ if type(A)=='table' then
+  local function read(name)local f=A[name];if type(f)=='function' then local ok,v=pcall(f,handle);return ok and tostring(v) or 'error' end;return 'n/a' end
+  log('Stats: get_item_cost='..read('get_item_cost')..' get_level_requirement='..read('get_level_requirement')..' get_item_level='..read('get_item_level'))
+ end
  return true
 end
 local function shortcuts(action)
@@ -269,7 +289,7 @@ function S.attach()
  -- Project fresh native row tables; never change the actor's inventory arrays.
  wrap(I,'get_surplus_inventory',function(original)return function(...)
   if S.enabled and S.view_slot~=I.m_selected_slot then S.view_slot=I.m_selected_slot;S.category_changed=true end
-  if S.enabled and STATS[S.order] and stat_order_for(I.m_selected_slot)~=S.order then
+  if S.enabled and STATS[S.order] and not stat_available(S.order,I.m_selected_slot) then
    S.order='az';log('Stat sort does not apply to this category; sorting by name.')
   end
   if not S.enabled or not active()then return original(...)end

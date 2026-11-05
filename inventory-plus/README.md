@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.2 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.3 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -24,13 +24,14 @@ only Back. Tab-click handling no longer depends on the native event argument
 order, and the first few distinct button event names are written once to the log
 for diagnosis. The footer keeps the tab hint while a sort is active.
 **0.6.0 adds provisional damage and armor sorting.** Ctrl+S now cycles native
-order, Name A-Z, Name Z-A and, in Primary/Secondary, **Damage** (high to low) or,
-in Armor, **Armor** (high to low). Unreadable values sort last, never as zero;
+order, Name A-Z, Name Z-A and, where they apply, **Damage** (Primary/Secondary),
+**Armor** (Armor), **Lvl** (required level; weapons, armor, accessories) and
+**Value** (item cost; every category), all high to low. Unreadable values sort last, never as zero;
 ties fall back to name, then native order. The sort applies within each native
 subcategory header and never changes items. A stat sort resets to Name A-Z when
 you switch to a category it does not apply to. The values come from the game's
 own read-only damage/armor tables through the new native helper (replace the
-whole package, DLL included; the bridge token is now 0.6.0). **0.6.0 and 0.6.1 do not load; use 0.6.2.** Their damage/armor fingerprints
+whole package, DLL included; the bridge token is now 0.6.0). **0.6.0 and 0.6.1 do not load; use 0.6.2 or later.** Their damage/armor fingerprints
 included an absolute address that the loader rebases, so the helper refused to
 start whenever the game loaded at a different base address (nothing changed from
 vanilla). 0.6.2 compares that operand against the real base. The first Ctrl+D per session also logs the *names* (never calling them) of ACTOR/TYPE
@@ -43,8 +44,8 @@ one the item card shows is unverified, so the sort currently uses slot 0, scaled
 choice can be checked against the card. Until then, damage/armor order may not
 match the card. An All view remains planned.
 
-[Download 0.6.2 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.2-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.2-preview.zip.sha256)
+[Download 0.6.3 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.3-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.3-preview.zip.sha256)
 
 ## Installation
 

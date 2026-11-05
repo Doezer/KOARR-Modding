@@ -15,12 +15,12 @@ function M.short(text,limit)
  end
  return at>#text and text or (string.sub(text,1,at-1)..'…')
 end
--- read_stat(item_id) -> number|nil serves the numeric orders 'dmg' and 'arm' (high to low).
+-- read_stat(item_id) -> number|nil serves the numeric orders 'dmg', 'arm', 'lvl' and 'val' (high to low).
 -- Unknown values sort after known ones, never as zero; name then snapshot order break ties.
 function M.project(rows,query,order,read_name,fold,status,read_stat)
  assert(type(rows)=='table' and type(query)=='string')
- assert(order=='native' or order=='az' or order=='za' or order=='dmg' or order=='arm')
- local numeric=order=='dmg' or order=='arm'
+ assert(order=='native' or order=='az' or order=='za' or order=='dmg' or order=='arm' or order=='lvl' or order=='val')
+ local numeric=order=='dmg' or order=='arm' or order=='lvl' or order=='val'
  assert(not numeric or type(read_stat)=='function','Stat reader unavailable')
  local needle=fold(query)
  assert(type(needle)=='string','Could not normalize search text')

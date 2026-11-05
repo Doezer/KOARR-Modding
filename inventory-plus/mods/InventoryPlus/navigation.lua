@@ -13,6 +13,11 @@ function M.create(S,log,N)
  local function context()
   return rawget(_G,'inventory_win'),rawget(_G,'WINDOW'),rawget(_G,'ledger_win')
  end
+ -- Bounded diagnostics: a silent refusal is indistinguishable from a dead button.
+ local notes=0
+ local function note(message)
+  if notes<60 then notes=notes+1;log('[nav] '..message)end
+ end
  local function blocked()
   local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
   return not S.enabled or S.editing or S.back_guard or S.navigating
@@ -41,19 +46,36 @@ function M.create(S,log,N)
   end
   return tree,I,W
  end
+ local function busy_reason()
+  local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
+  if not S.enabled then return 'disabled' end
+  if S.editing then return 'editing' end
+  if S.back_guard then return 'back guard' end
+  if S.navigating then return 'already navigating' end
+  if name and name.m_inited then return 'text dialog open' end
+  if tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active()then return 'tutorial' end
+  if menu and type(menu.is_dragging)=='function' and menu.is_dragging()then return 'dragging' end
+ end
  local function select_category(index,entry)
   local d=definitions[index];local tree,I,W=tree_context()
-  if not d or blocked() or not tree or not I.m_list_wrapper or (not entry and not W.is_visible(I.m_list_wrapper))then return false end
+  local function refuse(reason)note('tab '..tostring(index)..' refused: '..reason);return false end
+  if not d then return false end
+  if blocked() then return refuse('busy ('..tostring(busy_reason())..')')end
+  if not tree then return refuse('ledger tree unavailable')end
+  if not I.m_list_wrapper then return refuse('no item list')end
+  if not entry and not W.is_visible(I.m_list_wrapper)then return refuse('item list hidden')end
   local node=tree:find_node(d.id)
-  if not node or node.disabled then return false end
+  if not node then return refuse('node '..tostring(d.id)..' not found in tree')end
+  if node.disabled then return refuse('node '..tostring(d.id)..' disabled')end
   if I.m_selected_slot==d.id and W.is_visible(I.m_list_wrapper)then return true end
   local route={};local cursor=node
   for _=1,12 do
    if not cursor or not cursor.parent then break end
-   if cursor.disabled then return false end
+   if cursor.disabled then return refuse('ancestor '..tostring(cursor.id_string)..' disabled')end
    table.insert(route,1,cursor.id_string);cursor=cursor.parent
   end
-  if cursor~=tree.m_tree then return false end
+  if cursor~=tree.m_tree then return refuse('route does not reach the tree root')end
+  note('tab '..tostring(index)..' route '..table.concat(route,'>')..' from path '..table.concat(tree.m_path or {},'>'))
   T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree}
   S.navigating=true;return true
  end
@@ -141,16 +163,17 @@ function M.create(S,log,N)
   local signature=table.concat(path,':')..':'..tostring(I.m_selected_slot)
   if p.last==signature then return end
   p.last=signature
+  note('step path='..table.concat(path,'>')..' slot='..tostring(I.m_selected_slot)..' loading='..tostring(tree.m_node_load_in_progress))
   local common=0
   while common<#path and common<#p.route and path[common+1]==p.route[common+1]do common=common+1 end
-  if #path>common then tree:go_up_a_level();return end
+  if #path>common then note('up');tree:go_up_a_level();return end
   local current=tree:get_cur_node();local next_id=p.route[common+1]
   for index,node in ipairs(current.children or {})do
    if node.id_string==next_id and not node.disabled then
-    tree:set_highlight(index);tree:go_down_a_level();return
+    note('down to '..tostring(next_id)..' (child '..index..')');tree:set_highlight(index);tree:go_down_a_level();return
    end
   end
-  T.cancel();log('Category unavailable in the native tree.')
+  T.cancel();log('Category unavailable in the native tree (wanted '..tostring(next_id)..' under '..tostring(current.id_string)..').')
   if not (I.m_list_wrapper and W.is_visible(I.m_list_wrapper))then fall_back(tree,'Native category menu restored.')end
  end
  function T.owns_click()return T.click_owned==true end
@@ -170,7 +193,7 @@ function M.create(S,log,N)
    if not cursor then break end
    for index,tab in ipairs(T.windows)do
     if cursor==tab.root or cursor==tab.label then
-     if event=='DOWN'then T.click_owned=true;T.release_ticks=0;T.select(index)end
+     if event=='DOWN'then note('click on tab '..index);T.click_owned=true;T.release_ticks=0;T.select(index)end
      return true -- consume all owned events before the native list sees them
     end
    end

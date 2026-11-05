@@ -549,3 +549,31 @@ Hardening for other players' PCs: the damage/armor reader fingerprints are now o
 
 Verification added in 0.6.2: `tools/verify_inventory_plus_stats.py` runs the game's real reader code (0x00E42140/0x00E421D0) in an x86 emulator at three image bases against a synthetic component (180 cases: raw/scaled, slot 12, override pointers, invalid component, stack balance), alongside the existing name-path emulation. The spec parser has a C unit test. In-game confirmation of the whole flow is still pending.
 
+
+## 0.6.3 from the first working game log (5 November)
+
+0.6.2 loaded: the helper registered, search, the tab controls and Ctrl+D worked.
+Findings and changes:
+
+- **Button events** arrive as `(event_name, window)`: ENTER, MOVE, PASSOVER, LEAVE,
+  DOWN, PRESSED, CLICKED, UP, with a userdata window. The argument order assumed by
+  the click guard is confirmed.
+- **Armor key:** slot 0 matches the card. "Boiled Leather Hood" read raw 27 / scaled
+  51, and ItemScaling's hover line for it says armor 51 (base 27); other pieces
+  read 28 or 56 where raw equals scaled. Armor sorting therefore keeps slot 0,
+  scaled. The damage slot is still unconfirmed (no weapon was dumped).
+- **Value and required level:** the candidate-name list showed `get_item_cost`,
+  `get_level_requirement` and `get_item_level` on ACTOR. Working third-party mods
+  (Transmog, ItemScaling, SetSeeker) call them as `pcall(ACTOR.get_x, item)` and use
+  the numeric result, so 0.6.3 adds Value and Lvl sorts on exactly that shape. Getters
+  only; no setter is called. Ctrl+D logs the three values for comparison with the card.
+  There is no rarity getter in the list, so rarity is still unavailable.
+- **Footer overlap:** with a sort active the tab legend ran past the row it shares
+  with native buttons. The legend is now capped at 34 characters in every state
+  (tested); long queries shrink to fit and "No match" is shorter.
+- **Weapon tabs did nothing.** The log has no navigation lines at all, so the cause
+  cannot be read from it. 0.6.3 logs every refusal and every traversal step
+  (`[nav] ...`, bounded to 60 lines), plus each tab click, so the next log shows
+  whether the click reaches the tab, whether the route is refused, or where the
+  native traversal stalls. Ctrl+1 and Ctrl+2 exercise the same path without the mouse.
+

@@ -152,7 +152,7 @@ assert(S.back_guard and ledger_actions==0)
 idle=true;I.on_update_event();assert(not S.back_guard)
 -- Empty results hide details/actions; another category cannot become a wrong item.
 assert(S.set_query('absent') and S.matched==0 and I.get_selected_item()==nil)
-assert(string.find(footer.text,'No matches',1,true))
+assert(string.find(footer.text,'No match',1,true))
 before=#actions;I.destroy_selected_item();assert(#actions==before)
 S.clear_search()
 -- A removed item is invalidated before an action, then a fresh rebuild selects a survivor.
