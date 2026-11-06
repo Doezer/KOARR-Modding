@@ -663,3 +663,32 @@ The tester reports cards showing 58 and 72 for two of these but did not say whic
 whether the sum rule holds across weapon types is still open; the sum is only confirmed for
 the daggers. The card values and the item names are needed to compare.
 
+
+## 0.6.8: the weapon headline is direct damage plus damage over time (6 November)
+
+The tester supplied cards for two weapons whose number my slot sum could not explain:
+
+| Card | Rows | Headline |
+| --- | --- | --- |
+| Emboldening Chakrams | 25 Physical, 16 Fire, 31 Burning over 3 s | 72 |
+| Oak Staff | 35 Lightning, 23 Shocking over 5 s | 58 |
+| Infected Longsword | 31 Physical, 12 Piercing, 19 Poison over 6 s | 62 |
+| Trencher | 74 Physical, 27 Piercing | 101 |
+
+So the headline is the direct rows plus the damage-over-time total. The 14-slot native table
+holds only the direct part (hence its dumps of 41 and 35 for the first two), and the over-time
+part is not in it. Working mods read both with the game's own functions: direct rows from
+`character_data.get_item_damage_by_type(item, 0)` (`mod_b`, with bonuses) and over-time rows
+from `character_data.get_item_dot_damage_by_type(item)` (`base`; the card asks without
+bonuses). The Damage sort now sums exactly those, with no dependence on the native helper;
+tests include the Oak Staff case (35 + 23 beats a plain 40). The earlier statements that the
+card "adds the slots" were wrong for weapons with damage over time.
+
+List scrolling: with the category buttons above it the list could not be scrolled to its
+last rows. The buttons shrink the list's wrapper by 128 units, but the native list window
+inside keeps its original height, so its bottom rows sat below the clipped area. The
+wrapper's own list window (a window handle among the fields of `inventory_win.m_list` with the
+wrapper's old height) is now resized with it and restored when the controls close. The
+resize and the discovered window fields are logged as `[nav] list window ...`; this is
+unconfirmed in game because the field names are not known offline.
+

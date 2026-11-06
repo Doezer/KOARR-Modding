@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.7 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.8 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -38,16 +38,17 @@ vanilla). 0.6.2 compares that operand against the real base. The first Ctrl+D pe
 functions that mention value, level, rarity, quality, price, cost, gold, worth or
 tier, so rarity/required-level/value sorts can target real readers next.
 
-**Confirmed against the item card:** for daggers, Damage is the sum of the weapon's
-damage types (Physical 13 and Piercing 13 shows 26); other weapon types are still to be
-checked with Ctrl+D against their cards. Armor is the armor rating
+**Confirmed against item cards:** Damage is the number at the top of a weapon card: its direct
+damage lines plus any damage over time (Oak Staff 35 Lightning + 23 Shocking = 58; Emboldening
+Chakrams 25 + 16 + 31 Burning = 72; Infected Longsword 31 + 12 + 19 Poison = 62; Trencher
+74 + 27 = 101; Daggers 13 + 13 = 26). Armor is the armor rating
 the card shows (a hood read 27 raw and 51 scaled, and the card said 51). Value orders
 by the game's item cost, which sets the merchant sell price; the inventory does not
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
 logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.6.7 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.7-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.7-preview.zip.sha256)
+[Download 0.6.8 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.8-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.8-preview.zip.sha256)
 
 ## Installation
 

@@ -112,4 +112,26 @@ tree.m_path={4242793,2468509}
 -- Visible inventory root and a stale selected slot are not enough to show tabs.
 I.m_list_wrapper.visible=false;T.failed=false;T.update();assert(made==0)
 I.m_list_wrapper.visible=true;T.update();assert(made==1 and T.failed)
+-- The native list window keeps its own height: it shrinks with its wrapper (or the last rows
+-- cannot be scrolled to) and is restored when the controls go away.
+do
+ local resized={}
+ local real_resize=WINDOW.resize
+ WINDOW.resize=function(w,width,height)resized[#resized+1]={w=w,h=height}end
+ WINDOW.create_window=function()return {} end
+ WINDOW.find_static_type=function()return {} end
+ local list_window=io.stdout -- any userdata stands in for a window handle
+ I.m_list={window=list_window,selected=3}
+ T.failed=false;T.windows={};T.geometry=nil;T.resized=nil
+ I.m_selected_slot=2627341;I.m_list_wrapper.visible=true;tree.m_path={4242793,2468509}
+ T.update()
+ local shrunk=false
+ for _,r in ipairs(resized)do if r.w==list_window and r.h==372 then shrunk=true end end
+ assert(shrunk and T.resized and #T.resized==1) -- 500 - the 128 reserved for the buttons
+ resized={};T.close()
+ local restored=false
+ for _,r in ipairs(resized)do if r.w==list_window and r.h==500 then restored=true end end
+ assert(restored and T.resized==nil)
+ WINDOW.resize=real_resize
+end
 print('Navigation: common-parent traversal, async load, release gate, cancellation and landing-page gating passed')

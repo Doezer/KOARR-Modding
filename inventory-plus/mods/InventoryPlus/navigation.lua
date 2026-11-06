@@ -35,6 +35,10 @@ function M.create(S,log,N)
    local g=T.geometry;T.geometry=nil
    pcall(W.move,g.window,g.x,g.y);pcall(W.resize,g.window,g.width,g.height)
   end
+  if T.resized then
+   for _,r in ipairs(T.resized)do pcall(W.resize,r.window,r.width,r.height)end
+   T.resized=nil
+  end
   T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil
  end
  function T.cancel()
@@ -263,6 +267,24 @@ function M.create(S,log,N)
      W.move(root,x+column*cell,y+row*row_height)
     end
     W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
+    -- The native list window keeps its own height: shrink it with its wrapper, or the last rows
+    -- sit below the visible area and cannot be scrolled to.
+    T.resized={}
+    if type(I.m_list)=='table' then
+     local names={}
+     for key,value in pairs(I.m_list)do
+      if type(value)=='userdata' then
+       local okh,h=pcall(W.get_height,value);local okw,w=pcall(W.get_width,value)
+       names[#names+1]=tostring(key)..'='..tostring(okh and h)
+       if okh and okw and type(h)=='number' and math.abs(h-height)<=2 then
+        pcall(W.resize,value,w,height-reserved)
+        T.resized[#T.resized+1]={window=value,width=w,height=h}
+        note('list window '..tostring(key)..' resized '..tostring(h)..' -> '..tostring(height-reserved))
+       end
+      end
+     end
+     note('list windows: '..table.concat(names,' ')..'; wrapper height '..tostring(height))
+    end
    end)
    if not ok then T.close();T.failed=true;log('Category tabs unavailable; native navigation retained: '..tostring(err));return end
   end

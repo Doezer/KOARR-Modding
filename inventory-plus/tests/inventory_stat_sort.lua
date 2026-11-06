@@ -14,6 +14,17 @@ InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=fu
  end,
  has_stats=function()return '1' end, -- a C function can only answer with a pushed value
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
+-- character_data rows as the card reads them: direct damage (mod_b) and damage over time (base).
+local direct={[10]={5},[20]={40},[40]={40},[60]={13,13},[61]={20},[62]={35},[63]={40}}
+local dots={[62]={23}}
+local function rows_of(source,field)
+ return function(h)
+  local list=source[h];if not list then return nil end
+  local rows={};for i,v in ipairs(list)do rows[#rows+1]={dmg_type='T'..i,base=v,[field]=v}end
+  return rows
+ end
+end
+character_data={get_item_damage_by_type=rows_of(direct,'mod_b'),get_item_dot_damage_by_type=rows_of(dots,'base')}
 local cost={[10]=300,[20]=50,[30]=900,[40]=50}
 local function attr(table_)return function(h)if h==40 then error('unreadable')end;return table_[h] or 0 end end
 ACTOR={is_valid=function()return true end,
@@ -44,7 +55,7 @@ local function cycle_to(target)for _=1,8 do if S.order==target then return true 
 local seen={}
 for _=1,6 do S.cycle_sort();seen[#seen+1]=S.order end
 assert(table.concat(seen,',')=='az,za,dmg,req,val,native',table.concat(seen,','))
-assert(cycle_to('dmg') and specs.d001)
+assert(cycle_to('dmg') and not specs.d001) -- damage no longer uses the native slot reader
 assert(order()=='20,40,10,30') -- high to low, tie by name, unknown (30) last
 -- The card adds every damage type: 13+13 beats a single 20, though slot 0 alone would not.
 do
@@ -52,6 +63,10 @@ do
  rows={{header_id='Gear',header_text=1,len=2},{item_id=61},{item_id=60}}
  S.order='native';assert(cycle_to('dmg'))
  assert(order()=='60,61',order())
+ -- Damage over time counts: 35 + 23 over time = 58 beats a plain 40 (the Oak Staff card).
+ rows={{header_id='Gear',header_text=1,len=2},{item_id=63},{item_id=62}}
+ I.rebuild_list_win()
+ assert(order()=='62,63',order())
  rows=saved;I.rebuild_list_win()
 end
 assert(cycle_to('req'))
@@ -77,7 +92,7 @@ assert(table.concat(seen,',')=='az,za,native')
 I.m_selected_slot=2627341;fired['Ctrl+D']=true
 local before=order();assert(S.dump_stats() and order()==before)
 local joined=table.concat(logs,'\n')
-assert(joined:find('damage raw    =1,2',1,true) and joined:find('sort keys: damage = sum',1,true))
+assert(joined:find('damage raw    =1,2',1,true) and joined:find('card damage (direct + over time)',1,true))
 assert(joined:find('get_item_cost=50 get_level_requirement=0 get_item_level=7',1,true))
 assert(joined:find('requirements might=8 finesse=0 intellect=0',1,true))
 -- The footer shares its row with native buttons: no state may exceed 34 characters.

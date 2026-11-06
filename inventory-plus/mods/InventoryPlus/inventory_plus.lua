@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.7 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.8 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.7-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.8-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -33,21 +33,51 @@ end
 -- Numeric sort sources (all high to low). dmg/arm read the game's native 14-slot tables
 -- through the helper; req/val call ACTOR getters exactly as other working mods do
 -- (single item handle, numeric result). Which values the item card shows is checked
--- with Ctrl+D. Confirmed against the card: damage = sum of slots (13+13=26), armor = slot 0 scaled.
+-- with Ctrl+D. Confirmed against cards: damage = direct rows + damage over time, armor = slot 0 scaled.
 local WEAPONS={[2627341]=true,[2010694]=true}
 local ARMOR={[1070770]=true}
 local GEAR={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true}
 local ALL={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true,[7304644]=true,[911336]=true,[607556]=true}
 local STATS={
- dmg={kind='d',sum=true,scaled=1,label='Dmg',slots=WEAPONS}, -- card damage = sum of the damage slots (13+13=26)
+ dmg={reader='card',label='Dmg',slots=WEAPONS}, -- the card headline: direct damage rows + damage over time
  arm={kind='a',index=0,scaled=1,label='Armor',slots=ARMOR},
  req={getters={'get_might_requirement','get_finesse_requirement','get_intellect_requirement','get_level_requirement'},label='Req',slots=GEAR},
  val={getter='get_item_cost',label='Value',slots=ALL},
 }
 local STAT_ORDER={'dmg','arm','req','val'}
+-- The card headline (58 = 35 Lightning + 23 Shocking/5s; 72 = 25 + 16 + 31 Burning/3s; 101 = 74 + 27)
+-- is the direct damage rows (mod_b, with bonuses) plus the damage-over-time rows (base), read with
+-- the same character_data functions the card and other working mods use.
+local function card_damage(handle)
+ local cd=rawget(G,'character_data')
+ if type(cd)~='table' or type(cd.get_item_damage_by_type)~='function' then return nil end
+ local total
+ local ok,rows=pcall(cd.get_item_damage_by_type,handle,0)
+ if ok and type(rows)=='table' then
+  for _,row in pairs(rows)do
+   if type(row)=='table' then
+    local value=tonumber(row.mod_b) or tonumber(row.base)
+    if value then total=(total or 0)+value end
+   end
+  end
+ end
+ if total~=nil and type(cd.get_item_dot_damage_by_type)=='function' then
+  local okd,dots=pcall(cd.get_item_dot_damage_by_type,handle)
+  if okd and type(dots)=='table' then
+   for _,row in pairs(dots)do
+    if type(row)=='table' then total=total+(tonumber(row.base) or 0)end
+   end
+  end
+ end
+ return total
+end
 local function stat_available(order,slot)
  local d=STATS[order]
  if not d or not d.slots[slot] then return false end
+ if d.reader=='card' then
+  local cd=rawget(G,'character_data')
+  return type(cd)=='table' and type(cd.get_item_damage_by_type)=='function'
+ end
  if d.getter or d.getters then
   local A=rawget(G,'ACTOR')
   if type(A)~='table' then return false end
@@ -63,6 +93,7 @@ local function stat_orders_for(slot)
 end
 local function stat_reader(order)
  local d=STATS[order]
+ if d.reader=='card' then return card_damage end
  if d.getter or d.getters then
   local A=rawget(G,'ACTOR');local names=d.getters or {d.getter}
   -- A single number per item; an item shows at most one requirement, so take the largest.
@@ -240,7 +271,7 @@ function S.dump_stats()
  log('Stats: item="'..tostring(r[2])..'" slot='..tostring(I.m_selected_slot)..'; columns are slot indices 0..13')
  log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
  log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
- log('Stats: sort keys: damage = sum of all slots (scaled), armor = slot '..STATS.arm.index..' (scaled)')
+ log('Stats: card damage (direct + over time) = '..tostring(card_damage(handle))..'; sort keys: damage = card damage, armor = slot '..STATS.arm.index..' (scaled)')
  local A=rawget(G,'ACTOR')
  if type(A)=='table' then
   local function read(name)local f=A[name];if type(f)=='function' then local ok,v=pcall(f,handle);return ok and tostring(v) or 'error' end;return 'n/a' end
