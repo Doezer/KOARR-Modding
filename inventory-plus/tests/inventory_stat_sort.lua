@@ -4,7 +4,14 @@ print=function(s)logs[#logs+1]=s end
 InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=function()return true end,
  poll=function(s)local v=fired[s];fired[s]=nil;return v and s or nil end,
  item_name=function(id)return 'item'..id end,
- stat=function(handle,spec)specs[spec]=true;local v=({[10]=5,[20]=40,[40]=40})[handle];if v==nil then return nil end;return tostring(v) end,
+ stat=function(handle,spec)
+  specs[spec]=true
+  local per_slot={[60]={13,13},[61]={20}} -- two damage types vs one bigger single slot
+  if per_slot[handle] then return tostring(per_slot[handle][tonumber(string.sub(spec,2,3))+1] or 0)end
+  local v=({[10]=5,[20]=40,[40]=40})[handle]
+  if v==nil or string.sub(spec,2,3)~='00' then return v and '0' or nil end -- one non-zero slot
+  return tostring(v)
+ end,
  has_stats=function()return '1' end, -- a C function can only answer with a pushed value
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
 local cost={[10]=300,[20]=50,[30]=900,[40]=50}
@@ -39,6 +46,14 @@ for _=1,6 do S.cycle_sort();seen[#seen+1]=S.order end
 assert(table.concat(seen,',')=='az,za,dmg,req,val,native',table.concat(seen,','))
 assert(cycle_to('dmg') and specs.d001)
 assert(order()=='20,40,10,30') -- high to low, tie by name, unknown (30) last
+-- The card adds every damage type: 13+13 beats a single 20, though slot 0 alone would not.
+do
+ local saved=rows
+ rows={{header_id='Gear',header_text=1,len=2},{item_id=61},{item_id=60}}
+ S.order='native';assert(cycle_to('dmg'))
+ assert(order()=='60,61',order())
+ rows=saved;I.rebuild_list_win()
+end
 assert(cycle_to('req'))
 assert(order()=='10,20,30,40') -- 8 (finesse) and 8 (might) tie by name; 0 is known; unreadable (40) last
 assert(cycle_to('val'))
@@ -62,7 +77,7 @@ assert(table.concat(seen,',')=='az,za,native')
 I.m_selected_slot=2627341;fired['Ctrl+D']=true
 local before=order();assert(S.dump_stats() and order()==before)
 local joined=table.concat(logs,'\n')
-assert(joined:find('damage raw    =1,2',1,true) and joined:find('provisional sort keys',1,true))
+assert(joined:find('damage raw    =1,2',1,true) and joined:find('sort keys: damage = sum',1,true))
 assert(joined:find('get_item_cost=50 get_level_requirement=0 get_item_level=7',1,true))
 assert(joined:find('requirements might=8 finesse=0 intellect=0',1,true))
 -- The footer shares its row with native buttons: no state may exceed 34 characters.

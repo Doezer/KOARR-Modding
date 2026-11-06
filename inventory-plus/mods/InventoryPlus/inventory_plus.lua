@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.5 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.6 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.5-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.6-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -33,13 +33,13 @@ end
 -- Numeric sort sources (all high to low). dmg/arm read the game's native 14-slot tables
 -- through the helper; req/val call ACTOR getters exactly as other working mods do
 -- (single item handle, numeric result). Which values the item card shows is checked
--- with Ctrl+D; slot/mode below are provisional until that comparison is done.
+-- with Ctrl+D. Confirmed against the card: damage = sum of slots (13+13=26), armor = slot 0 scaled.
 local WEAPONS={[2627341]=true,[2010694]=true}
 local ARMOR={[1070770]=true}
 local GEAR={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true}
 local ALL={[2627341]=true,[2010694]=true,[1070770]=true,[6689260]=true,[7304644]=true,[911336]=true,[607556]=true}
 local STATS={
- dmg={kind='d',index=0,scaled=1,label='Dmg',slots=WEAPONS},
+ dmg={kind='d',sum=true,scaled=1,label='Dmg',slots=WEAPONS}, -- card damage = sum of the damage slots (13+13=26)
  arm={kind='a',index=0,scaled=1,label='Armor',slots=ARMOR},
  req={getters={'get_might_requirement','get_finesse_requirement','get_intellect_requirement','get_level_requirement'},label='Req',slots=GEAR},
  val={getter='get_item_cost',label='Value',slots=ALL},
@@ -75,11 +75,22 @@ local function stat_reader(order)
    return best
   end
  end
- local spec=string.format('%s%02d%d',d.kind,d.index,d.scaled)
- return function(handle)
-  local ok,text=pcall(N.stat,handle,spec)
+ local function read(handle,index)
+  local ok,text=pcall(N.stat,handle,string.format('%s%02d%d',d.kind,index,d.scaled))
   if ok then return tonumber(text)end
  end
+ if d.sum then
+  -- The card shows the total over every damage type; unreadable only if no slot answers.
+  return function(handle)
+   local total
+   for index=0,13 do
+    local value=read(handle,index)
+    if value then total=(total or 0)+value end
+   end
+   return total
+  end
+ end
+ return function(handle)return read(handle,d.index)end
 end
 local reminder,scope
 -- The footer shares its row with native buttons; text past this width slides under them.
@@ -229,7 +240,7 @@ function S.dump_stats()
  log('Stats: item="'..tostring(r[2])..'" slot='..tostring(I.m_selected_slot)..'; columns are slot indices 0..13')
  log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
  log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
- log('Stats: provisional sort keys: damage slot '..STATS.dmg.index..' scaled='..STATS.dmg.scaled..', armor slot '..STATS.arm.index..' scaled='..STATS.arm.scaled)
+ log('Stats: sort keys: damage = sum of all slots (scaled), armor = slot '..STATS.arm.index..' (scaled)')
  local A=rawget(G,'ACTOR')
  if type(A)=='table' then
   local function read(name)local f=A[name];if type(f)=='function' then local ok,v=pcall(f,handle);return ok and tostring(v) or 'error' end;return 'n/a' end

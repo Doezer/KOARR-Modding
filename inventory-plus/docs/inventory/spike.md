@@ -618,3 +618,19 @@ returns text, and a source-level test requires the function to push. Other predi
 (`poll`, `held`, `idle`, `self_test`) return 1 with their argument still on the stack,
 which Lua reads as a truthy value, and were confirmed working in game.
 
+
+## 0.6.6: weapon tabs confirmed; damage slot settled (6 November)
+
+The 0.6.5 log shows the weapon tabs working: routes such as `4242793>2468509>2627341`
+walk down through Weapons, Primary and Secondary both switch, and entry lands in
+Primary. Primary/Secondary switching also ran through repeated rapid presses without
+a stall (a second press during a transition is refused as "already navigating").
+
+Damage: "Crude Azurite Daggers" dumped damage slots `13,13,0,...` raw and scaled, and
+the card shows 26. ItemScaling's tooltip lines show Physical 13 and Piercing 13 for the
+same item, and an earlier weapon with 11 + 11 showed 22. So the card's damage is the
+sum over the damage types, and 0.6.6 sorts by the scaled total of slots 0..13 (a test
+distinguishes 13+13 from a single 20). Armor stays on slot 0 scaled (matched on three
+items). Value remains an item-cost order: the inventory does not display it, so it can
+only be judged by merchant prices.
+

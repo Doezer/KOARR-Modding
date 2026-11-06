@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.5 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.6 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -38,14 +38,15 @@ vanilla). 0.6.2 compares that operand against the real base. The first Ctrl+D pe
 functions that mention value, level, rarity, quality, price, cost, gold, worth or
 tier, so rarity/required-level/value sorts can target real readers next.
 
-**Provisional:** the native tables hold 14 slots and a raw/scaled mode. Which
-one the item card shows is unverified, so the sort currently uses slot 0, scaled.
-**Ctrl+D** logs all slots for the selected item to the framework log so that
-choice can be checked against the card. Until then, damage/armor order may not
-match the card. An All view remains planned.
+**Confirmed against the item card:** Damage is the sum of the weapon's damage types
+(a dagger with Physical 13 and Piercing 13 shows 26), and Armor is the armor rating
+the card shows (a hood read 27 raw and 51 scaled, and the card said 51). Value orders
+by the game's item cost, which sets the merchant sell price; the inventory does not
+display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
+logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.6.5 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.5-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.5-preview.zip.sha256)
+[Download 0.6.6 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.6-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.6-preview.zip.sha256)
 
 ## Installation
 
