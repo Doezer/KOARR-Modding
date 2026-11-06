@@ -20,6 +20,19 @@ class InventoryPlusTests(unittest.TestCase):
                             '-o', binary], cwd=ROOT, check=True)
             subprocess.run([binary], check=True)
 
+    def test_runs_on_game_globals_only(self):
+        # The mod must not need any other mod: it may read only the game's own modules and its own.
+        import re
+        allowed = {'ACTOR', 'character_data', 'inventory_win', 'ledger_win', 'name_win', 'tutorial_win',
+                   'menu_tools', 'WINDOW', 'InventoryPlus', 'InventoryPlusNative', 'InventoryPlusModel',
+                   'InventoryPlusNavigationV2'}
+        forbidden = re.compile(r'itemscaling|transmog|koar|setseeker|hovercards|reforge|nativecore', re.I)
+        for path in (ROOT / 'mods/InventoryPlus').glob('*.lua'):
+            code = '\n'.join(re.sub(r'--.*', '', line) for line in path.read_text(encoding='utf-8').splitlines())
+            names = set(re.findall(r"rawget\((?:G|_G),\s*'([A-Za-z_]+)'\)", code))
+            self.assertLessEqual(names, allowed, f'{path.name} reads {sorted(names - allowed)}')
+            self.assertIsNone(forbidden.search(code), f'{path.name} refers to another mod')
+
     def test_has_stats_pushes_its_answer(self):
         # Regression: returning a bare 1 from a Lua C function reports one result without
         # pushing it, so Lua never saw a value and the damage/armor sorts were never offered.

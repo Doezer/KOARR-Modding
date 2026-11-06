@@ -51,6 +51,14 @@ logs the underlying numbers for the selected item to the framework log. An All v
 [Download 0.6.9 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip)
 · [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip.sha256)
 
+## Dependencies
+
+Only the Mod Framework (and the native helper shipped in this ZIP). The sorts read the game's own
+`ACTOR` and `character_data` functions, the same ones the item cards use, so no other mod is
+required: ItemScaling, Transmog and the rest are optional, and when one changes item stats the
+sort follows the numbers the card then shows. A test fails if the adapter ever reads a global
+outside the game's own modules.
+
 ## Installation
 
 Requires GOG Re-Reckoning with Fatesworn and Mod Framework v1.4, matching the build
