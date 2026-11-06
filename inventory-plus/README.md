@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.8 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.9 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -41,14 +41,15 @@ tier, so rarity/required-level/value sorts can target real readers next.
 **Confirmed against item cards:** Damage is the number at the top of a weapon card: its direct
 damage lines plus any damage over time (Oak Staff 35 Lightning + 23 Shocking = 58; Emboldening
 Chakrams 25 + 16 + 31 Burning = 72; Infected Longsword 31 + 12 + 19 Poison = 62; Trencher
-74 + 27 = 101; Daggers 13 + 13 = 26). Armor is the armor rating
+74 + 27 = 101; Daggers 13 + 13 = 26; Charged Faeblades 26 + 15 + 6 Lightning + 3 Shocking = 50). Ctrl+D
+lists each damage type's direct and over-time amount next to the total. Armor is the armor rating
 the card shows (a hood read 27 raw and 51 scaled, and the card said 51). Value orders
 by the game's item cost, which sets the merchant sell price; the inventory does not
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
 logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.6.8 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.8-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.8-preview.zip.sha256)
+[Download 0.6.9 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip.sha256)
 
 ## Installation
 

@@ -692,3 +692,26 @@ wrapper's old height) is now resized with it and restored when the controls clos
 resize and the discovered window fields are logged as `[nav] list window ...`; this is
 unconfirmed in game because the field names are not known offline.
 
+
+## 0.6.9: buff-added elements, and the scroll window (6 November)
+
+Two weapon cards disagreed with 0.6.8: Charged Faeblades showed 50 (26 Physical, 15 Piercing,
+6 Lightning, 3 Shocking over 4 s) while the sort computed 41, and Blistering Faeblades showed 46
+(23, 13, 6 Fire, 4 Burning over 5 s) against 36. The 6-point element and the over-time line are
+buff-added: `character_data.get_item_damage_by_type` skips a type whose own amount is zero and
+`get_item_dot_damage_by_type` reads without bonuses (Transmog documents both), so neither saw them.
+The native scaled slots did see the element (`26,15,0,0,6`: 47), and 47 + 3 = 50. 0.6.9 reads every
+damage type with bonuses through `ACTOR.get_weapon_damage(item, i, true)` and
+`ACTOR.get_weapon_dot_damage(item, i, true)` (the shapes Transmog uses), and Ctrl+D lists each
+type's `direct+over time` beside the total, so the next log can confirm the over-time part
+against cards (the direct part is already confirmed). The 0.6.8 note that `character_data` rows
+are the card's source is withdrawn.
+
+Scrolling: the 0.6.8 log shows the list's only window field is `window` with height 3675 against
+a 516-unit wrapper, so the same-height match found nothing to resize. That window is the scrolling
+content. With the viewport shrunk by the reserved 128, the last 128 units fall past the native
+scroll range. 0.6.9 adds the reserved height to the content window (and re-adds it whenever the
+native rebuild resets it, checked each ledger update); closing the controls restores it. Whether
+the native scroll range reads the content height live is unconfirmed; `[nav] padded list content`
+lines in the log show it happening, and the user's scroll test shows whether it helps.
+

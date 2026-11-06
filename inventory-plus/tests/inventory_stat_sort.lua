@@ -14,20 +14,18 @@ InventoryPlusNative={self_test=function(s)return s end,fold=string.lower,idle=fu
  end,
  has_stats=function()return '1' end, -- a C function can only answer with a pushed value
  stats=function()return 'Sword','1,2','3,4','5,6','7,8' end}
--- character_data rows as the card reads them: direct damage (mod_b) and damage over time (base).
-local direct={[10]={5},[20]={40},[40]={40},[60]={13,13},[61]={20},[62]={35},[63]={40}}
-local dots={[62]={23}}
-local function rows_of(source,field)
- return function(h)
-  local list=source[h];if not list then return nil end
-  local rows={};for i,v in ipairs(list)do rows[#rows+1]={dmg_type='T'..i,base=v,[field]=v}end
-  return rows
- end
-end
-character_data={get_item_damage_by_type=rows_of(direct,'mod_b'),get_item_dot_damage_by_type=rows_of(dots,'base')}
+-- Per-type readers with bonuses, as the card and other working mods call them (0-based type index).
+-- direct[handle][type]=amount; dots[handle][type]=amount over time. Unknown handles error out.
+local direct={[10]={[0]=5},[20]={[0]=40},[40]={[0]=40},[60]={[0]=13,[1]=13},[61]={[0]=20},
+ [62]={[4]=35},[63]={[0]=40},
+ [64]={[0]=26,[1]=15,[4]=6},[65]={[0]=23,[1]=13,[3]=6},[66]={[0]=47}} -- Faeblades: 6 comes from a buff
+local dots={[62]={[4]=23},[64]={[4]=3},[65]={[3]=4}}
+character_data={m_damage_types={'Physical','Piercing','Slashing','Fire','Lightning','Ice','Poison'}}
 local cost={[10]=300,[20]=50,[30]=900,[40]=50}
 local function attr(table_)return function(h)if h==40 then error('unreadable')end;return table_[h] or 0 end end
 ACTOR={is_valid=function()return true end,
+ get_weapon_damage=function(h,i,bonus)assert(bonus==true);if not direct[h] then error('unreadable')end;return direct[h][i] or 0 end,
+ get_weapon_dot_damage=function(h,i,bonus)assert(bonus==true);return (dots[h] or {})[i] or 0 end,
  get_item_cost=function(h)calls.cost=(calls.cost or 0)+1;return cost[h] end,
  get_might_requirement=function(h)calls.level=(calls.level or 0)+1;return attr({[20]=8})(h)end,
  get_finesse_requirement=attr({[10]=8}),get_intellect_requirement=attr({}),get_level_requirement=attr({}),
@@ -67,6 +65,15 @@ do
  rows={{header_id='Gear',header_text=1,len=2},{item_id=63},{item_id=62}}
  I.rebuild_list_win()
  assert(order()=='62,63',order())
+ rows=saved;I.rebuild_list_win()
+end
+-- Buff-added elements and their over-time part count: 26+15+6 + 3 = 50 and 23+13+6 + 4 = 46 beat a plain 47
+-- only by the over-time part (the character_data rows alone would give 41, 36 and 47).
+do
+ local saved=rows
+ rows={{header_id='Gear',header_text=1,len=3},{item_id=65},{item_id=66},{item_id=64}}
+ S.order='native';assert(cycle_to('dmg'))
+ assert(order()=='64,66,65',order()) -- 50, 47, 46
  rows=saved;I.rebuild_list_win()
 end
 assert(cycle_to('req'))

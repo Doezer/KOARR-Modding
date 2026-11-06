@@ -27,6 +27,19 @@ function M.create(S,log,N)
    or (tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active())
    or (menu and type(menu.is_dragging)=='function' and menu.is_dragging())
  end
+function T.pad_list()
+  local _,W=context()
+  local c=T.list_content;if not c then return end
+  local okh,h=pcall(W.get_height,c.window);local okw,w=pcall(W.get_width,c.window)
+  if not(okh and okw and type(h)=='number')then return end
+  if h==c.padded then return end -- unchanged since our last padding
+  c.width=w
+  if h>c.viewport then
+   c.original=h;c.padded=h+c.reserve
+   pcall(W.resize,c.window,w,c.padded)
+   note('padded list content '..tostring(h)..' -> '..tostring(c.padded))
+  else c.original=nil;c.padded=h end
+ end
  function T.close()
   local _,W=context()
   for i=#T.windows,1,-1 do pcall(W.destroy_window,T.windows[i].root)end
@@ -35,10 +48,8 @@ function M.create(S,log,N)
    local g=T.geometry;T.geometry=nil
    pcall(W.move,g.window,g.x,g.y);pcall(W.resize,g.window,g.width,g.height)
   end
-  if T.resized then
-   for _,r in ipairs(T.resized)do pcall(W.resize,r.window,r.width,r.height)end
-   T.resized=nil
-  end
+  local c=T.list_content;T.list_content=nil
+  if c and c.original and c.padded and c.padded~=c.original then pcall(W.resize,c.window,c.width,c.original)end
   T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil
  end
  function T.cancel()
@@ -267,27 +278,22 @@ function M.create(S,log,N)
      W.move(root,x+column*cell,y+row*row_height)
     end
     W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
-    -- The native list window keeps its own height: shrink it with its wrapper, or the last rows
-    -- sit below the visible area and cannot be scrolled to.
-    T.resized={}
+    -- The list's scrolling content window (thousands of units tall) still assumes the full-height
+    -- viewport, so with the viewport shrunk the last rows sit below the reachable scroll range.
+    -- pad_list() adds the reserved height to the content (and again after every native rebuild).
+    T.list_content=nil
     if type(I.m_list)=='table' then
-     local names={}
      for key,value in pairs(I.m_list)do
-      if type(value)=='userdata' then
-       local okh,h=pcall(W.get_height,value);local okw,w=pcall(W.get_width,value)
-       names[#names+1]=tostring(key)..'='..tostring(okh and h)
-       if okh and okw and type(h)=='number' and math.abs(h-height)<=2 then
-        pcall(W.resize,value,w,height-reserved)
-        T.resized[#T.resized+1]={window=value,width=w,height=h}
-        note('list window '..tostring(key)..' resized '..tostring(h)..' -> '..tostring(height-reserved))
-       end
+      if type(value)=='userdata' and not T.list_content then
+       T.list_content={window=value,key=tostring(key),viewport=height-reserved,reserve=reserved}
       end
      end
-     note('list windows: '..table.concat(names,' ')..'; wrapper height '..tostring(height))
+     note('list content window: '..(T.list_content and T.list_content.key or 'none')..'; wrapper height '..tostring(height))
     end
    end)
    if not ok then T.close();T.failed=true;log('Category tabs unavailable; native navigation retained: '..tostring(err));return end
   end
+  T.pad_list()
   local visible=W.is_visible(I.m_window) and not S.editing
   if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode then return end
   T.last_slot=I.m_selected_slot;T.last_visible=visible;T.last_mode=I.m_curr_mode

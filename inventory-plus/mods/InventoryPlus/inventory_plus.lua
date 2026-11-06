@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.8 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.9 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.8-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.9-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -48,25 +48,28 @@ local STAT_ORDER={'dmg','arm','req','val'}
 -- The card headline (58 = 35 Lightning + 23 Shocking/5s; 72 = 25 + 16 + 31 Burning/3s; 101 = 74 + 27)
 -- is the direct damage rows (mod_b, with bonuses) plus the damage-over-time rows (base), read with
 -- the same character_data functions the card and other working mods use.
-local function card_damage(handle)
+-- character_data.get_item_damage_by_type skips an element whose own amount is 0, so a buff-added
+-- element (6 Lightning on Charged Faeblades) never shows there. The with-bonuses per-type readers
+-- (as Transmog calls them) see every type, direct and over time.
+local function damage_types()
  local cd=rawget(G,'character_data')
- if type(cd)~='table' or type(cd.get_item_damage_by_type)~='function' then return nil end
- local total
- local ok,rows=pcall(cd.get_item_damage_by_type,handle,0)
- if ok and type(rows)=='table' then
-  for _,row in pairs(rows)do
-   if type(row)=='table' then
-    local value=tonumber(row.mod_b) or tonumber(row.base)
-    if value then total=(total or 0)+value end
-   end
+ local types=type(cd)=='table' and cd.m_damage_types
+ return type(types)=='table' and #types>0 and #types or 14
+end
+local function card_damage(handle,detail)
+ local A=rawget(G,'ACTOR')
+ if type(A)~='table' or type(A.get_weapon_damage)~='function' then return nil end
+ local total,names
+ local cd=rawget(G,'character_data');names=type(cd)=='table' and cd.m_damage_types
+ for index=0,damage_types()-1 do
+  local ok,direct=pcall(A.get_weapon_damage,handle,index,true);direct=ok and tonumber(direct)
+  local over=0
+  if type(A.get_weapon_dot_damage)=='function' then
+   local okd,value=pcall(A.get_weapon_dot_damage,handle,index,true);over=okd and tonumber(value) or 0
   end
- end
- if total~=nil and type(cd.get_item_dot_damage_by_type)=='function' then
-  local okd,dots=pcall(cd.get_item_dot_damage_by_type,handle)
-  if okd and type(dots)=='table' then
-   for _,row in pairs(dots)do
-    if type(row)=='table' then total=total+(tonumber(row.base) or 0)end
-   end
+  if direct then
+   total=(total or 0)+direct+over
+   if detail and (direct>0 or over>0) then detail[#detail+1]=tostring(type(names)=='table' and names[index+1] or index)..' '..direct..'+'..over end
   end
  end
  return total
@@ -75,8 +78,8 @@ local function stat_available(order,slot)
  local d=STATS[order]
  if not d or not d.slots[slot] then return false end
  if d.reader=='card' then
-  local cd=rawget(G,'character_data')
-  return type(cd)=='table' and type(cd.get_item_damage_by_type)=='function'
+  local A=rawget(G,'ACTOR')
+  return type(A)=='table' and type(A.get_weapon_damage)=='function'
  end
  if d.getter or d.getters then
   local A=rawget(G,'ACTOR')
@@ -271,7 +274,8 @@ function S.dump_stats()
  log('Stats: item="'..tostring(r[2])..'" slot='..tostring(I.m_selected_slot)..'; columns are slot indices 0..13')
  log('Stats: damage raw    ='..r[3]);log('Stats: damage scaled ='..r[4])
  log('Stats: armor  raw    ='..r[5]);log('Stats: armor  scaled ='..r[6])
- log('Stats: card damage (direct + over time) = '..tostring(card_damage(handle))..'; sort keys: damage = card damage, armor = slot '..STATS.arm.index..' (scaled)')
+ local detail={};local total=card_damage(handle,detail)
+ log('Stats: card damage (direct + over time) = '..tostring(total)..' ['..table.concat(detail,', ')..']; sort keys: damage = card damage, armor = slot '..STATS.arm.index..' (scaled)')
  local A=rawget(G,'ACTOR')
  if type(A)=='table' then
   local function read(name)local f=A[name];if type(f)=='function' then local ok,v=pcall(f,handle);return ok and tostring(v) or 'error' end;return 'n/a' end
