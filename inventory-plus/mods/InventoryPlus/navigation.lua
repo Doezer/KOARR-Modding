@@ -18,9 +18,11 @@ function M.create(S,log,N)
  local function note(message)
   if notes<60 then notes=notes+1;log('[nav] '..message)end
  end
- local function blocked()
+ -- A keyboard chord may retarget a move that is still under way (latest press wins).
+ local function blocked(retarget)
   local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
-  return not S.enabled or S.editing or S.back_guard or S.navigating
+  local moving=S.navigating and not (retarget and T.pending and not T.exiting)
+  return not S.enabled or S.editing or S.back_guard or moving
    or (name and name.m_inited)
    or (tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active())
    or (menu and type(menu.is_dragging)=='function' and menu.is_dragging())
@@ -58,21 +60,21 @@ function M.create(S,log,N)
   end
   return walk(tree.m_tree,{},1)
  end
- local function busy_reason()
+ local function busy_reason(retarget)
   local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
   if not S.enabled then return 'disabled' end
   if S.editing then return 'editing' end
   if S.back_guard then return 'back guard' end
-  if S.navigating then return 'already navigating' end
+  if S.navigating and not (retarget and T.pending and not T.exiting)then return 'already navigating' end
   if name and name.m_inited then return 'text dialog open' end
   if tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active()then return 'tutorial' end
   if menu and type(menu.is_dragging)=='function' and menu.is_dragging()then return 'dragging' end
  end
- local function select_category(index,entry)
+ local function select_category(index,entry,from_key)
   local d=definitions[index];local tree,I,W=tree_context()
   local function refuse(reason)note('tab '..tostring(index)..' refused: '..reason);return false end
   if not d then return false end
-  if blocked() then return refuse('busy ('..tostring(busy_reason())..')')end
+  if blocked(from_key) then return refuse('busy ('..tostring(busy_reason(from_key))..')')end
   if not tree then return refuse('ledger tree unavailable')end
   if not I.m_list_wrapper then return refuse('no item list')end
   if not entry and not W.is_visible(I.m_list_wrapper)then return refuse('item list hidden')end
@@ -87,10 +89,12 @@ function M.create(S,log,N)
    route[#route+1]=step.id_string
   end
   note('tab '..tostring(index)..' route '..table.concat(route,'>')..' from path '..table.concat(tree.m_path or {},'>'))
-  T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree}
+  -- Key-initiated moves need no key-release wait: the chord guard already swallows the game's
+  -- own key events. Pointer moves keep waiting for the button to come up.
+  T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree,key=from_key==true}
   S.navigating=true;return true
  end
- function T.select(index)return select_category(index,false)end
+ function T.select(index,from_key)return select_category(index,false,from_key)end
  -- The native path holds ids from the root; parent links are not reliable for every node.
  local function in_inventory(tree)
   local path=tree.m_path
@@ -163,7 +167,7 @@ function M.create(S,log,N)
    if not (I.m_list_wrapper and W.is_visible(I.m_list_wrapper))then fall_back(tree,'Native category menu restored.')end
    return
   end
-  if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
+  if tree.m_node_load_in_progress or (not p.key and not N.idle('InventoryPlus'))then return end
   if I.m_selected_slot==p.id and I.m_list_wrapper and W.is_visible(I.m_list_wrapper)then
    T.cancel();if S.query~=p.query then S.set_query(p.query)end;return
   end

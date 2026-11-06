@@ -635,3 +635,31 @@ distinguishes 13+13 from a single 20). Armor stays on slot 0 scaled (matched on 
 items). Value remains an item-cost order: the inventory does not display it, so it can
 only be judged by merchant prices.
 
+
+## 0.6.7: chained shortcuts; more weapon dumps (6 November)
+
+Armor sort appears and Ctrl+1/2 no longer equip (tester). Remaining report: Ctrl+digits
+switched categories only after all keys were released, and holding several in turn did
+nothing. The log shows why: `tab 7 route ...`, `tab 6 refused: busy (already navigating)`,
+then `Category navigation stopped`. Navigation advanced only when every key was up, a wait
+designed for mouse clicks. Key-initiated moves now skip that wait (the chord guard already
+swallows the game's own key events) and a newer key press retargets the move in progress.
+Pointer moves keep the wait.
+
+Weapon dumps from the same session (scaled slots; ItemScaling alters stats on hover, so the
+card may show a value from before or after its adjustment):
+
+| Weapon | Damage slots (raw / scaled) |
+| --- | --- |
+| Crude Azurite Daggers | 13,13 / 13,13 (card 26, per the tester) |
+| Oak Staff | slot 4 = 35 |
+| Oak Sceptre | slot 5 = 23 |
+| Emboldening Chakrams | 16,_,_,16 / 25,_,_,16 |
+| Infected Longsword | 31,12 |
+| Trencher | 52,12 / 74,27 |
+| Soldier's Hammer | slot 0 = 79 |
+
+The tester reports cards showing 58 and 72 for two of these but did not say which, so
+whether the sum rule holds across weapon types is still open; the sum is only confirmed for
+the daggers. The card values and the item names are needed to compare.
+

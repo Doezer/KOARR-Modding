@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.6 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.6.7 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.6-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.6.7-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -267,7 +267,7 @@ local function shortcuts(action)
   local key=string.lower(action)
   if key=='b' or key=='exiting' or key=='exitingshortcut'then S.back_guard=true;S.clear_search();return true end
  end
- if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then S.key_guard=true;tabs.select(index);return true end end end
+ if tabs then for index=1,7 do if N.poll('Ctrl+'..index)then S.key_guard=true;tabs.select(index,true);return true end end end
  if N.poll('Ctrl+F')then S.open_search();return true end
  if N.poll('Ctrl+S')then S.cycle_sort();return true end
  if N.poll('Ctrl+D')then S.dump_stats();return true end

@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.6 preview
+# Inventory Plus — search, sorting and category buttons, 0.6.7 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -46,8 +46,8 @@ by the game's item cost, which sets the merchant sell price; the inventory does 
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
 logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.6.6 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.6-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.6-preview.zip.sha256)
+[Download 0.6.7 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.7-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.7-preview.zip.sha256)
 
 ## Installation
 
@@ -76,7 +76,8 @@ adapter; no nested asset loader is used during startup.
 
 ## Controls
 
-- **Click tabs / Ctrl+1-7:** switch categories while browsing an item list.
+- **Click tabs / Ctrl+1-7:** switch categories while browsing an item list. Ctrl+digits can be
+  chained without releasing the keys; the newest press wins.
 - **Ctrl+F:** open the native search dialog. Confirm to apply a name filter.
 - **Ctrl+S:** cycle native order → Name A–Z → Name Z–A → (Damage in Primary/Secondary, Armor in Armor) → native order.
 - **Ctrl+D:** diagnostic; logs the selected item's native damage/armor tables.

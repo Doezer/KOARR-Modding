@@ -76,6 +76,14 @@ for _=1,4 do T.update()end
 assert(not S.navigating and #tree.m_path==0 and tree.m_window.visible)
 -- Other ledger sections retain the original navigation window.
 tree.m_window.visible=true;T.update();assert(tree.m_window.visible)
+-- Chained key chords: keys stay held (never idle), the newest press retargets, no timeout.
+idle=false;T.cancel();T.exiting=nil;tree.m_node_load_in_progress=false;tree.m_path={4242793,2468509}
+I.m_selected_slot=2627341;I.m_list_wrapper.visible=true
+assert(T.select(3,true) and S.navigating)
+assert(T.select(2,true) and T.pending.id==2010694 and T.pending.key) -- retargeted while moving
+T.update();assert(tree.loading and tree.loading.id_string==2010694) -- advanced without a key release
+assert(not T.select(2,false)) -- a pointer press during a move is still refused
+T.cancel();tree.loading=nil;tree.m_node_load_in_progress=false;idle=true
 -- Regression: the Weapons subtree has no parent links in the game. The route comes from
 -- `children`, and being inside Inventory comes from the native path, never from `parent`.
 local saved_parent=weapons.parent
