@@ -38,8 +38,9 @@ vanilla). 0.6.2 compares that operand against the real base. The first Ctrl+D pe
 functions that mention value, level, rarity, quality, price, cost, gold, worth or
 tier, so rarity/required-level/value sorts can target real readers next.
 
-**Confirmed against the item card:** Damage is the sum of the weapon's damage types
-(a dagger with Physical 13 and Piercing 13 shows 26), and Armor is the armor rating
+**Confirmed against the item card:** for daggers, Damage is the sum of the weapon's
+damage types (Physical 13 and Piercing 13 shows 26); other weapon types are still to be
+checked with Ctrl+D against their cards. Armor is the armor rating
 the card shows (a hood read 27 raw and 51 scaled, and the card said 51). Value orders
 by the game's item cost, which sets the merchant sell price; the inventory does not
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
