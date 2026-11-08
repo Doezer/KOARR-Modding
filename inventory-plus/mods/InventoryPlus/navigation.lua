@@ -41,10 +41,35 @@ function M.create(S,log,N)
    or (tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active())
    or (menu and type(menu.is_dragging)=='function' and menu.is_dragging())
  end
+ -- The inventory list's scroll helper (menu_tools.create_scrollable_helper) caches the viewport height
+ -- in `height`; the game's scroll range is the content's scrollable height minus it. The wrapper is
+ -- shrunk for the tab rows, so the cached number must shrink too or the last rows are out of reach.
+ -- Only that Lua number is changed (resizing the content window instead stopped the wheel entirely).
+ local function find_scroll_helper(list)
+  if type(list)~='table' then return end
+  local function usable(h)return type(h)=='table' and h.window~=nil and type(h.height)=='number' end
+  if usable(list.scroll_helper)then return list.scroll_helper,'scroll_helper' end
+  if usable(list)then return list,'list' end
+  for key,value in pairs(list)do if usable(value)then return value,tostring(key)end end
+ end
+ function T.sync_scroll()
+  local c=T.scroll;if not c then return end
+  local h=c.helper
+  -- a native relayout can reset the cached height to the full size: shrink it again
+  if type(h.height)=='number' and h.height>=c.original-1 and h.height~=c.applied then
+   c.original=h.height;c.applied=h.height-c.reserve;h.height=c.applied
+   note('scroll viewport reset by the game; shrunk again to '..tostring(c.applied))
+  end
+ end
+ function T.unscroll()
+  local c=T.scroll;T.scroll=nil
+  if c and c.helper.height==c.applied then c.helper.height=c.original end
+ end
  function T.close()
   local _,W=context()
   for i=#T.windows,1,-1 do pcall(W.destroy_window,T.windows[i].root)end
   T.windows={}
+  T.unscroll()
   if T.geometry then
    local g=T.geometry;T.geometry=nil
    pcall(W.move,g.window,g.x,g.y);pcall(W.resize,g.window,g.width,g.height)
@@ -312,12 +337,37 @@ function M.create(S,log,N)
     make_cell(x,y+2*row_height,half).action='sort'
     make_cell(x+half,y+2*row_height,half).action='find'
     W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
-    -- Only the wrapper and our own cloned controls are moved or resized. Padding the list's scrolling
-    -- content window (tried in 0.6.9 to 0.7.1) stopped the wheel from scrolling at all, so the last
-    -- rows can sit slightly past the scroll range; that is a known limitation, not worth losing scroll.
+    -- Only the wrapper and our own cloned controls are moved or resized (padding the list's scrolling
+    -- content window in 0.6.9 to 0.7.1 stopped the wheel). The scroll helper's cached viewport follows.
+    T.scroll=nil
+    local helper,key=find_scroll_helper(I.m_list)
+    if helper then
+     T.scroll={helper=helper,key=key,original=helper.height,reserve=reserved}
+     T.scroll.applied=helper.height-reserved;helper.height=T.scroll.applied
+     local okc,content=pcall(W.get_scrollable_height,helper.window)
+     local okp,pos=pcall(W.get_vert_scroll_pos,helper.window)
+     note('scroll helper '..key..': viewport '..tostring(T.scroll.original)..' -> '..tostring(T.scroll.applied)
+      ..'; content '..tostring(okc and content)..', position '..tostring(okp and pos))
+     local original_scroll=helper.modify_scroll
+     if type(original_scroll)=='function' and not helper.ip_logged then
+      helper.ip_logged=true;local count=0
+      helper.modify_scroll=function(self,delta,...)
+       local r={original_scroll(self,delta,...)}
+       if count<6 then
+        count=count+1
+        local ok1,p=pcall(W.get_vert_scroll_pos,helper.window);local ok2,total=pcall(W.get_scrollable_height,helper.window)
+        note('scroll '..tostring(delta)..' -> position '..tostring(ok1 and p)..' of '..tostring(ok2 and total)..' (viewport '..tostring(helper.height)..')')
+       end
+       return unpack(r)
+      end
+     end
+    else
+     note('no scroll helper found on the inventory list')
+    end
    end)
    if not ok then T.close();T.failed=true;log('Category tabs unavailable; native navigation retained: '..tostring(err));return end
   end
+  T.sync_scroll()
   local visible=W.is_visible(I.m_window) and not S.editing
   local sig=tostring(S.order)..'|'..tostring(S.query)..'|'..tostring(S.matched)..'/'..tostring(S.total)
   if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode and T.last_sig==sig then return end

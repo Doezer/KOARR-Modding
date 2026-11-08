@@ -1,4 +1,4 @@
--- Inventory Plus 0.7.2 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.7.3 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.7.2-preview',hooks={},waits={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.7.3-preview',hooks={},waits={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 -- Release a guard once every key is up, or after `limit` checks regardless: the helper's idle() can
 -- stay false (stuck key, controller mapping, remote session) and a guard must never hold input forever.

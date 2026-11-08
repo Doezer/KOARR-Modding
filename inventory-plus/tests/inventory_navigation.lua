@@ -165,12 +165,18 @@ do
  WINDOW.create_window=function()return {} end
  WINDOW.find_static_type=function()return {} end
  local content=io.stdout -- any userdata stands in for the list's scrolling content window
- I.m_list={window=content,selected=3}
+ local helper={window=content,height=516,modify_scroll=function()return 1 end}
+ I.m_list={window=content,selected=3,scroll_helper=helper}
  T.failed=false;T.windows={};T.geometry=nil
  I.m_selected_slot=2627341;I.m_list_wrapper.visible=true;tree.m_path={4242793,2468509}
  T.update();T.update()
  for _,w in ipairs(resized)do assert(w~=content,'the list content window must stay untouched')end
- T.close()
+ -- The scroll helper's cached viewport follows the shrunk wrapper (96 units for the tab rows), is
+ -- shrunk again if the game resets it, and is restored when the controls go away.
+ assert(helper.height==516-96)
+ helper.height=516;T.update();assert(helper.height==516-96)
+ helper.modify_scroll(helper,1) -- the diagnostic wrapper must pass calls through
+ T.close();assert(helper.height==516)
  WINDOW.resize,WINDOW.get_height=real_resize,real_height
 end
 print('Navigation: common-parent traversal, async load, release gate, cancellation and landing-page gating passed')

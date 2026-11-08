@@ -827,3 +827,10 @@ the last rows) is removed. The wrapper and our own controls are the only windows
 slightly past the end of the scroll range, as in 0.6.8. A relayout of the native list after the
 wrapper is resized is the next idea to try, once scrolling is confirmed working again.
 
+
+
+## 0.7.3: scroll range follows the shrunk list (8 November)
+
+The list's scroll helper (`menu_tools.create_scrollable_helper`; HoverCards clamps the same object) caches its viewport height in `height`, and the scroll range is the content height minus it. The wrapper is shrunk by 96 units for the tab rows, so the cached number now shrinks too, is shrunk again if the game resets it, and is restored when the controls close. The content window is never resized (that stopped the wheel in 0.6.9 to 0.7.1). The log prints `scroll helper ...` at entry and the first six wheel moves with position and range; if the helper is not found it says so. Unconfirmed in-game.
+
+Damage order: the sort uses the engine's per-type values. With ItemScaling installed, an item it raised can show a lower number on the card (Voracity: card 39, engine 47 = Fire 23+19 plus Petrification 5), because the card is built from the item's authored affix list and ItemScaling's patch only raises existing rows. Without ItemScaling the engine and card values are expected to agree (not tested).
