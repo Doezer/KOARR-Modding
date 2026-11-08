@@ -50,10 +50,10 @@ function T.pad_list()
   end
   local c=T.list_content;T.list_content=nil
   if c and c.original and c.padded and c.padded~=c.original then pcall(W.resize,c.window,c.width,c.original)end
-  T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil
+  T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil;T.last_sig=nil
  end
  function T.cancel()
-  T.pending=nil;T.exiting=nil;S.navigating=false
+  T.queued=nil;T.pending=nil;T.exiting=nil;S.navigating=false
  end
  local function tree_context()
   local I,W,L=context();local tree=L and L.m_button_tree
@@ -220,7 +220,11 @@ function T.pad_list()
    if not cursor then break end
    for index,tab in ipairs(T.windows)do
     if cursor==tab.root or cursor==tab.label then
-     if event=='DOWN'then note('click on tab '..index);T.click_owned=true;T.release_ticks=0;T.select(index)end
+     if event=='DOWN'then
+      T.click_owned=true;T.release_ticks=0
+      if tab.action then note('click on '..tab.action);T.queued=tab.action
+      else note('click on tab '..index);T.select(index)end
+     end
      return true -- consume all owned events before the native list sees them
     end
    end
@@ -240,7 +244,13 @@ function T.pad_list()
   if T.click_owned then
    if I then I.m_mouse_event_received=false;I.m_moused_over_id=nil end
    if N.idle('InventoryPlus')then T.release_ticks=T.release_ticks+1 else T.release_ticks=0 end
-   if T.release_ticks>=2 then T.click_owned=false;T.release_ticks=0 end
+   if T.release_ticks>=2 then
+    T.click_owned=false;T.release_ticks=0
+    -- Sort and Find act only after the click is fully released, like tab moves.
+    local action=T.queued;T.queued=nil
+    local run=action=='sort' and S.cycle_sort or action=='find' and S.open_search
+    if run then local ok,err=pcall(run);if not ok then log('Button action failed: '..tostring(err))end end
+   end
   elseif not T.exiting then advance()end
   if not I or not I.m_inited or not I.m_window or not I.m_list_wrapper or not W then return end
   if not W.is_visible(I.m_window) or not W.is_visible(I.m_list_wrapper)
@@ -260,23 +270,31 @@ function T.pad_list()
     assert(width>=320 and height>=180,'Inventory panel is too small for tabs')
     T.geometry={window=I.m_list_wrapper,x=x,y=y,width=width,height=height}
     T.parent=I.m_window
-    local cell=width/2;local row_height=32;local reserved=128
-    for index,d in ipairs(definitions)do
+    -- Seven tabs in four columns (two rows), then a slim row holding clickable Sort and Find buttons.
+    local cols=4;local cell=width/cols;local row_height=32;local reserved=96
+    local function make_cell(left,top,cell_width)
      local root=W.create_window(UIXML_ID('inventory_win'),'INVENTORY_HEADER',I.m_window)
      assert(root,'Native category header could not be created')
      local tab={root=root};T.windows[#T.windows+1]=tab
      local label=W.find_static_type(root,1221325,679773,-1,true)
      assert(label,'Native category label unavailable');tab.label=label
-     W.resize(root,cell-4,row_height)
+     W.resize(root,cell_width-4,row_height)
      local cursor=W.get_parent_ui_win(label)
      for _=1,3 do
       if not cursor or cursor==root or cursor==I.m_window then break end
-      W.resize(cursor,cell-4,row_height);W.move(cursor,0,0);cursor=W.get_parent_ui_win(cursor)
+      W.resize(cursor,cell_width-4,row_height);W.move(cursor,0,0);cursor=W.get_parent_ui_win(cursor)
      end
-     W.resize(label,cell-12,row_height);W.move(label,4,0)
-     local column=(index-1)%2;local row=(index-1-column)/2
-     W.move(root,x+column*cell,y+row*row_height)
+     W.resize(label,cell_width-12,row_height);W.move(label,4,0)
+     W.move(root,left,top)
+     return tab
     end
+    for index=1,#definitions do
+     local column=(index-1)%cols;local row=(index-1-column)/cols
+     make_cell(x+column*cell,y+row*row_height,cell)
+    end
+    local half=width/2
+    make_cell(x,y+2*row_height,half).action='sort'
+    make_cell(x+half,y+2*row_height,half).action='find'
     W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
     -- The list's scrolling content window (thousands of units tall) still assumes the full-height
     -- viewport, so with the viewport shrunk the last rows sit below the reachable scroll range.
@@ -295,13 +313,22 @@ function T.pad_list()
   end
   T.pad_list()
   local visible=W.is_visible(I.m_window) and not S.editing
-  if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode then return end
-  T.last_slot=I.m_selected_slot;T.last_visible=visible;T.last_mode=I.m_curr_mode
+  local sig=tostring(S.order)..'|'..tostring(S.query)..'|'..tostring(S.matched)..'/'..tostring(S.total)
+  if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode and T.last_sig==sig then return end
+  T.last_slot=I.m_selected_slot;T.last_visible=visible;T.last_mode=I.m_curr_mode;T.last_sig=sig
+  local model=rawget(_G,'InventoryPlusModel')
   for index,tab in ipairs(T.windows)do
-   local d=definitions[index];local selected=I.m_selected_slot==d.id
-   if selected then T.last_index=index end
-   local caption=tostring(index)..' '..d.title
-   W.set_label_text(tab.label,selected and ('['..caption..']')or caption)
+   if tab.action=='sort' then
+    W.set_label_text(tab.label,'Sort: '..(S.sort_name and S.sort_name() or '?'))
+   elseif tab.action=='find' then
+    local short=model and model.short and model.short(tostring(S.query),6) or tostring(S.query)
+    W.set_label_text(tab.label,S.query=='' and 'Find: Ctrl+F' or ('Find: '..short..' '..tostring(S.matched)..'/'..tostring(S.total)))
+   else
+    local d=definitions[index];local selected=I.m_selected_slot==d.id
+    if selected then T.last_index=index end
+    local caption=tostring(index)..' '..d.title
+    W.set_label_text(tab.label,selected and ('['..caption..']')or caption)
+   end
    W.set_visible(tab.root,visible)
   end
  end

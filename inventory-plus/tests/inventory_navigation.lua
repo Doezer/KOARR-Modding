@@ -76,6 +76,28 @@ for _=1,4 do T.update()end
 assert(not S.navigating and #tree.m_path==0 and tree.m_window.visible)
 -- Other ledger sections retain the original navigation window.
 tree.m_window.visible=true;T.update();assert(tree.m_window.visible)
+-- Sort and Find buttons: the click is owned, the action runs once after the release, Back cancels it.
+do
+ local sorted,found=0,0
+ S.cycle_sort=function()sorted=sorted+1 end;S.open_search=function()found=found+1 end
+ local sort_btn,find_btn={},{}
+ local saved_windows=T.windows
+ local function buttons()T.windows={{root=sort_btn,label={},action='sort'},{root=find_btn,label={},action='find'}}end
+ -- A visible, categorised inventory list keeps T.update from closing the controls.
+ I.m_list_wrapper.visible=true;I.m_window.visible=true;I.m_selected_slot=2627341
+ idle=true;T.click_owned=false;T.queued=nil;buttons()
+ assert(T.event('DOWN',sort_btn) and T.owns_click() and sorted==0)
+ assert(T.event('UP',{}) and sorted==0)
+ for _=1,4 do T.update()end
+ assert(sorted==1 and found==0 and not T.owns_click())
+ buttons();for _=1,3 do T.update()end;assert(sorted==1) -- never repeats
+ buttons();assert(T.event('DOWN',find_btn));T.cancel() -- Back cancels the queued action
+ for _=1,4 do T.update()end
+ assert(found==0)
+ buttons();T.click_owned=false;assert(T.event('DOWN',find_btn))
+ for _=1,4 do T.update()end;assert(found==1)
+ T.windows=saved_windows;T.click_owned=false;T.cancel();S.cycle_sort=nil;S.open_search=nil
+end
 -- Chained key chords: keys stay held (never idle), the newest press retargets, no timeout.
 idle=false;T.cancel();T.exiting=nil;tree.m_node_load_in_progress=false;tree.m_path={4242793,2468509}
 I.m_selected_slot=2627341;I.m_list_wrapper.visible=true
@@ -127,9 +149,9 @@ do
  T.failed=false;T.windows={};T.geometry=nil;T.list_content=nil
  I.m_selected_slot=2627341;I.m_list_wrapper.visible=true;tree.m_path={4242793,2468509}
  T.update()
- assert(content_h==3675+128) -- padded by the 128 reserved for the buttons
+ assert(content_h==3675+96) -- padded by the 96 reserved for the tab and button rows
  resized={};T.update();assert(#resized==0) -- unchanged: not padded again
- content_h=3675;T.update();assert(content_h==3675+128) -- the native rebuild reset it: padded again
+ content_h=3675;T.update();assert(content_h==3675+96) -- the native rebuild reset it: padded again
  T.close();assert(content_h==3675 and T.list_content==nil) -- restored
  WINDOW.resize,WINDOW.get_height=real_resize,real_height
 end

@@ -1,4 +1,4 @@
-# Inventory Plus 0.6.9: one test session
+# Inventory Plus 0.7.0: one test session
 
 Everything below is unconfirmed in-game. Run it once, in order, and send the
 full framework log plus the numbers marked **[card]**.
@@ -9,7 +9,7 @@ full framework log plus the numbers marked **[card]**.
    `mods/inventory_plus_native.dll`, `mods/InventoryPlus/`.
 2. Remove the stats probe if installed (`mods/inventory_plus_stats_probe*`,
    `mods/InventoryPlusStatsProbe/`): both listen to Ctrl+D.
-3. Extract `InventoryPlus-0.6.9-preview.zip` beside `koa.exe`, merging `mods`.
+3. Extract `InventoryPlus-0.7.0-preview.zip` beside `koa.exe`, merging `mods`.
 4. Start the game fully, load a character with several weapons and armor pieces.
 
 ## Checks
@@ -32,6 +32,7 @@ full framework log plus the numbers marked **[card]**.
 | 14 | In Armor, Ctrl+S until **Armor**; Ctrl+D on 2 pieces; **[card]** their ratings | Same purpose |
 | 15 | Switch to Consumables with Dmg active | Falls back to A-Z |
 | 16 | In Primary press Ctrl+1 then Ctrl+2, then click Primary and Secondary | Switches; if a click does nothing, send the `[nav]` log lines |
+| 18 | Click the Sort button and the Find button (third row) | Sort cycles the order and its caption follows; Find opens the search dialog; nothing underneath activates |
 | 17 | Ctrl+S through Req and Value; Ctrl+D on 2 items; **[card]** the requirement shown (e.g. 8 Finesse) and the value, naming the item | Compare with the logged `get_item_cost` / `get_level_requirement` |
 
 If something looks wrong, stop and note the step number; do not retry repeatedly.

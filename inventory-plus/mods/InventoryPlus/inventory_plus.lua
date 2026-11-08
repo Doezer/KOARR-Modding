@@ -1,4 +1,4 @@
--- Inventory Plus 0.6.9 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.7.0 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.6.9-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.7.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
@@ -133,6 +133,9 @@ local function width(text)
  local n=0
  for i=1,#text do local b=string.byte(text,i);if b<128 or b>=192 then n=n+1 end end
  return n
+end
+function S.sort_name()
+ return S.order=='az' and 'A-Z' or S.order=='za' and 'Z-A' or (STATS[S.order] and STATS[S.order].label) or 'Native'
 end
 local function hint()
  local sort=S.order=='az' and 'A-Z' or S.order=='za' and 'Z-A' or (STATS[S.order] and STATS[S.order].label) or ''

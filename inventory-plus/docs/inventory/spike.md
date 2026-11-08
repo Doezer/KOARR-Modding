@@ -715,3 +715,28 @@ native rebuild resets it, checked each ledger update); closing the controls rest
 the native scroll range reads the content height live is unconfirmed; `[nav] padded list content`
 lines in the log show it happening, and the user's scroll test shows whether it helps.
 
+
+## 0.7.0: clickable Sort/Find; what the framework offers (8 November)
+
+Layout. The tabs moved from two columns by four rows (128 units) to four columns by two rows
+plus one slim row of two buttons, Sort and Find (96 units in total). Each button is a cloned
+native header like the tabs: its click is owned through the same ledger-first interception,
+queued, and run only after the release has drained (two idle ledger updates), so the action
+(`cycle_sort` or `open_search`) never races the click's own UP event; Back cancels a queued
+action. Captions update when the order, query or counts change (`Sort: Dmg`, `Find: frost 2/8`).
+A correction to an earlier estimate: a list row is about 105 units tall at 1080p, so the layout
+change frees about a third of a row, not three rows; its value is that Sort and Find are now
+mouse-usable. A single row of seven tabs was rejected because labels do not fit: at about 19
+units per character a 640-unit panel gives roughly 4 characters per cell at seven columns.
+Label clipping at four columns (about 8 characters) is estimated, not measured.
+
+Framework capabilities (read from `DevCortez/KoaModFramework`, the `dllmain.cpp` at the commit
+the docs already cite; the Nexus page for the framework itself was not located, and the
+distributed v1.4 may be newer): the manifest JSON accepts `scripts` (a Lua path loaded when a named
+game module loads), `patches` (a byte signature plus replacement, optional `vars`) and `.dll`
+files (loaded with `LoadLibraryA`). The only Lua function it registers is `print`. It provides no
+UI, texture, widget or asset API, and no event system. Anything beyond those three hooks
+(overlay, widgets, asset replacement) would come from a separate mod such as the new third-party
+NativeCore, which would make this mod depend on it; that is why Inventory Plus stays on the
+game's own modules plus its own helper DLL (see the Dependencies test).
+

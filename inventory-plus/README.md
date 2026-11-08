@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.6.9 preview
+# Inventory Plus — search, sorting and category buttons, 0.7.0 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -14,8 +14,9 @@ remain in use. No items are equipped merely by browsing either slot.
 Click the buttons or use **Ctrl+1-7**. Opening Inventory enters the last viewed
 category (Primary initially). Back clears an active search first, then leaves
 Inventory instead of reopening the old category hierarchy. Other ledger sections
-keep their native navigation. The new controls use two columns and four rows,
-leaving the item details and character pane native. Captions are English.
+keep their native navigation. The seven tabs sit in four columns and two rows, with a third row holding
+clickable **Sort: <order>** and **Find: <query>** buttons (the same actions as Ctrl+S and Ctrl+F;
+the sort button shows the active order). The item details and character pane stay native. Captions are English.
 
 This includes the 0.4.1 full-click isolation guard. **0.5.1** hardened 0.5.0's shell: if no category can be entered (for example a disabled
 native node) or entry times out, the native category menu is restored instead of
@@ -48,8 +49,8 @@ by the game's item cost, which sets the merchant sell price; the inventory does 
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
 logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.6.9 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.6.9-preview.zip.sha256)
+[Download 0.7.0 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.0-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.0-preview.zip.sha256)
 
 ## Dependencies
 
