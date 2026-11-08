@@ -150,6 +150,11 @@ assert(#I.m_last_set==5)
 idle=false;ledger_win.on_inputdeviceaction_event(nil,'b');I.on_update_event()
 assert(S.back_guard and ledger_actions==0)
 idle=true;I.on_update_event();assert(not S.back_guard)
+-- A keyboard state that never reads idle must not hold input forever.
+S.back_guard=true;idle=false
+for _=1,40 do I.on_update_event()end
+assert(not S.back_guard)
+idle=true
 -- Empty results hide details/actions; another category cannot become a wrong item.
 assert(S.set_query('absent') and S.matched==0 and I.get_selected_item()==nil)
 assert(string.find(footer.text,'No match',1,true))

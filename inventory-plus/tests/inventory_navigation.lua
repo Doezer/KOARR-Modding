@@ -98,6 +98,25 @@ do
  for _=1,4 do T.update()end;assert(found==1)
  T.windows=saved_windows;T.click_owned=false;T.cancel();S.cycle_sort=nil;S.open_search=nil
 end
+-- A keyboard state that never reads idle (stuck key, controller mapping, remote session) must not
+-- freeze navigation: the click releases and the move proceeds after a bounded wait.
+do
+ local btn={}
+ local saved_windows=T.windows
+ I.m_list_wrapper.visible=true;I.m_window.visible=true;I.m_selected_slot=2627341
+ tree.m_path={4242793,2468509};tree.m_node_load_in_progress=false;tree.loading=nil
+ idle=false;T.cancel();T.click_owned=false
+ T.windows={{root=btn,label={}}}
+ assert(T.event('DOWN',btn) and T.owns_click())
+ for _=1,40 do T.update()end
+ assert(not T.owns_click()) -- released although idle() never became true
+ T.windows=saved_windows;T.cancel()
+ assert(T.select(3) and S.navigating)
+ for _=1,45 do T.update()end
+ assert(#tree.m_path<2 or tree.loading) -- stepped up/down although idle() never became true
+ T.cancel();tree.loading=nil;tree.m_node_load_in_progress=false;tree.m_path={4242793,2468509}
+ I.m_list_wrapper.visible=true;idle=true
+end
 -- Chained key chords: keys stay held (never idle), the newest press retargets, no timeout.
 idle=false;T.cancel();T.exiting=nil;tree.m_node_load_in_progress=false;tree.m_path={4242793,2468509}
 I.m_selected_slot=2627341;I.m_list_wrapper.visible=true

@@ -1,4 +1,4 @@
--- Inventory Plus 0.7.0 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.7.1 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,8 +10,16 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.7.0-preview',hooks={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.7.1-preview',hooks={},waits={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
+-- Release a guard once every key is up, or after `limit` checks regardless: the helper's idle() can
+-- stay false (stuck key, controller mapping, remote session) and a guard must never hold input forever.
+local function settled(key,limit)
+ if N.idle('InventoryPlus')then S.waits[key]=nil;return true end
+ local n=(S.waits[key] or 0)+1;S.waits[key]=n
+ if n>=limit then S.waits[key]=nil;return true end
+ return false
+end
 local nav=rawget(G,'InventoryPlusNavigationV2')
 local tabs=nav and nav.create(S,log,N)
 local function update_tabs()
@@ -345,7 +353,7 @@ function S.attach()
  local ledger=rawget(G,'ledger_win')
  wrap(ledger,'on_update_event',function(original)return function(...)
   local result=pack(original(...))
-  if S.key_guard and N.idle('InventoryPlus')then S.key_guard=false end
+  if S.key_guard and settled('key',30)then S.key_guard=false end
   update_tabs();return returns(result)
  end end)
  -- The ledger sees button events before forwarding them to inventory. Stop
@@ -500,14 +508,14 @@ function S.attach()
    return
   end
   if S.enabled and S.back_guard then
-   if N.idle('InventoryPlus')then S.back_guard=false end
+   if settled('back',30)then S.back_guard=false end
    return
   end
   -- Defer releasing the guard until the modal is closed and held keys are up.
   -- This prevents Enter/Escape/Space from acting on an inventory item on return.
   if S.enabled and S.closing then
    local name=rawget(G,'name_win')
-   if (type(name)~='table' or not name.m_inited) and N.idle('InventoryPlus')then
+   if (type(name)~='table' or not name.m_inited) and settled('close',60)then
     S.editing=false;S.closing=false;S.callback=nil
     local query=S.pending_query;S.pending_query=nil
     if query~=nil then S.set_query(query)else update_hint()end

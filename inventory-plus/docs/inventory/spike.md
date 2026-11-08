@@ -776,3 +776,29 @@ be an optional add-on module that detects NativeCore at runtime and does nothing
 single release works with or without it. Worth doing only if clickable native buttons (0.7.0)
 prove insufficient.
 
+
+## 0.7.1: tabs frozen by a never-idle keyboard check (8 November)
+
+0.7.0 report: opening Inventory showed nothing for about a second, then the vanilla menu;
+inside a category the tabs appeared but did nothing. The log has `tab 1 route ... from path 4242793`
+followed 180 frames later by `Category navigation stopped` and `Native category menu restored`,
+with no `step` line in between; after `click on tab 2` there is a route line and nothing further.
+Both are waits on the helper's `idle()` (every virtual key up and the game process in the
+foreground): a pending move waits for it before its first step (the 180-frame timeout is the blank
+second), and click ownership counts idle ticks to end, so a never-idle state also kept every later
+tab press owned and unprocessed. Earlier sessions on the same executable passed this check, so
+something in the 8 November session kept it false (a held or mapped key, or the process not being
+foreground, as with a streamed or remote session). The cause is inferred from the log, not
+observed.
+
+Fix: every wait is bounded. Pointer moves wait at most 30 frames for idle, the automatic entry
+10, click ownership ends after 30 updates, and the Back, key-chord and search-close guards release
+after 30, 30 and 60 checks even if idle never reads true. When a wait runs out the log says
+`input not idle after N frames (<state>); continuing`, and the helper gained `idle_state()`, which
+reports `idle`, `unfocused` or `key <virtual-key code>`, so the next log names the culprit. Tests:
+a stuck idle releases a click and lets a move step; the Back guard releases without idle.
+
+Labels. In the 0.7.0 screenshot only `6 Items` and `7 Junk` were visible on the tab row: the
+others (`[1 Primary]`, `3 Armor`, ...) did not fit the 160-unit cells and showed only their digit.
+Tabs now use three-letter names (`1 Pri` ... `7 Jnk`). `Sort: Native` and `Find: Ctrl+F` fit.
+

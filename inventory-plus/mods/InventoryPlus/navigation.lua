@@ -3,10 +3,10 @@ if _G.InventoryPlusNavigationV2 then return _G.InventoryPlusNavigationV2 end
 local M={}
 _G.InventoryPlusNavigationV2=M
 local definitions={
- {id=2627341,parent=2468509,title='Primary'},
- {id=2010694,parent=2468509,title='Secondary'},
- {id=1070770,title='Armor'},{id=6689260,title='Accessories'},
- {id=7304644,title='Consumables'},{id=911336,title='Items'},{id=607556,title='Junk'}
+ {id=2627341,parent=2468509,title='Primary',short='Pri'},
+ {id=2010694,parent=2468509,title='Secondary',short='Sec'},
+ {id=1070770,title='Armor',short='Arm'},{id=6689260,title='Accessories',short='Acc'},
+ {id=7304644,title='Consumables',short='Con'},{id=911336,title='Items',short='Itm'},{id=607556,title='Junk',short='Jnk'}
 }
 function M.create(S,log,N)
  local T={windows={},definitions=definitions}
@@ -19,6 +19,20 @@ function M.create(S,log,N)
   if notes<60 then notes=notes+1;log('[nav] '..message)end
  end
  -- A keyboard chord may retarget a move that is still under way (latest press wins).
+ -- The helper's idle() (every key up, game focused) can stay false for reasons outside the mod: a
+ -- stuck key, a controller mapped to keys, a streamed or remote session. Every wait on it is
+ -- bounded, and the log names what it saw, so a stuck check slows a move instead of freezing it.
+ local function idle_detail()
+  if type(N.idle_state)~='function' then return 'unknown' end
+  local ok,text=pcall(N.idle_state,'InventoryPlus')
+  return ok and tostring(text) or 'error'
+ end
+ local function input_settled(p,limit)
+  if N.idle('InventoryPlus')then p.idle_wait=0;return true end
+  p.idle_wait=(p.idle_wait or 0)+1
+  if p.idle_wait==limit then note('input not idle after '..limit..' frames ('..idle_detail()..'); continuing')end
+  return p.idle_wait>=limit
+ end
  local function blocked(retarget)
   local name,tutorial,menu=rawget(_G,'name_win'),rawget(_G,'tutorial_win'),rawget(_G,'menu_tools')
   local moving=S.navigating and not (retarget and T.pending and not T.exiting)
@@ -106,7 +120,7 @@ function T.pad_list()
   note('tab '..tostring(index)..' route '..table.concat(route,'>')..' from path '..table.concat(tree.m_path or {},'>'))
   -- Key-initiated moves need no key-release wait: the chord guard already swallows the game's
   -- own key events. Pointer moves keep waiting for the button to come up.
-  T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree,key=from_key==true}
+  T.pending={id=d.id,query=S.query,route=route,frames=0,tree=tree,key=from_key==true,entry=entry==true}
   S.navigating=true;return true
  end
  function T.select(index,from_key)return select_category(index,false,from_key)end
@@ -131,7 +145,7 @@ function T.pad_list()
   if T.exiting then
    local p=T.exiting;p.frames=p.frames+1
    if tree~=p.tree or p.frames>180 then T.exiting=nil;S.navigating=false;return end
-   if tree.m_node_load_in_progress or not N.idle('InventoryPlus')then return end
+   if tree.m_node_load_in_progress or not input_settled(p,10)then return end
    if in_inventory(tree)then tree:go_up_a_level()
    else
     T.exiting=nil;S.navigating=false;T.close();T.hidden_tree=nil
@@ -182,7 +196,12 @@ function T.pad_list()
    if not (I.m_list_wrapper and W.is_visible(I.m_list_wrapper))then fall_back(tree,'Native category menu restored.')end
    return
   end
-  if tree.m_node_load_in_progress or (not p.key and not N.idle('InventoryPlus'))then return end
+  if tree.m_node_load_in_progress then
+   p.load_wait=(p.load_wait or 0)+1
+   if p.load_wait==60 then note('native load still in progress after 60 frames')end
+   return
+  end
+  if not p.key and not input_settled(p,p.entry and 10 or 30)then return end
   if I.m_selected_slot==p.id and I.m_list_wrapper and W.is_visible(I.m_list_wrapper)then
    T.cancel();if S.query~=p.query then S.set_query(p.query)end;return
   end
@@ -221,7 +240,7 @@ function T.pad_list()
    for index,tab in ipairs(T.windows)do
     if cursor==tab.root or cursor==tab.label then
      if event=='DOWN'then
-      T.click_owned=true;T.release_ticks=0
+      T.click_owned=true;T.release_ticks=0;T.click_age=0
       if tab.action then note('click on '..tab.action);T.queued=tab.action
       else note('click on tab '..index);T.select(index)end
      end
@@ -243,8 +262,9 @@ function T.pad_list()
   -- native controls, and only then start changing/destroying tab windows.
   if T.click_owned then
    if I then I.m_mouse_event_received=false;I.m_moused_over_id=nil end
+   T.click_age=(T.click_age or 0)+1
    if N.idle('InventoryPlus')then T.release_ticks=T.release_ticks+1 else T.release_ticks=0 end
-   if T.release_ticks>=2 then
+   if T.release_ticks>=2 or T.click_age>=30 then -- bounded: never wait forever on a stuck idle()
     T.click_owned=false;T.release_ticks=0
     -- Sort and Find act only after the click is fully released, like tab moves.
     local action=T.queued;T.queued=nil
@@ -326,7 +346,7 @@ function T.pad_list()
    else
     local d=definitions[index];local selected=I.m_selected_slot==d.id
     if selected then T.last_index=index end
-    local caption=tostring(index)..' '..d.title
+    local caption=tostring(index)..' '..(d.short or d.title)
     W.set_label_text(tab.label,selected and ('['..caption..']')or caption)
    end
    W.set_visible(tab.root,visible)

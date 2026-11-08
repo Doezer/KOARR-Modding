@@ -49,6 +49,14 @@ static int api_held(void *state) {
     if(!s||strlen(s)!=6||strncmp(s,"Ctrl+",5)||s[5]<'1'||s[5]>'7'||!focused())return 0;
     return down(VK_CONTROL)&&down((unsigned char)s[5])?1:0;
 }
+/* Names what keeps idle() false, for the log: "idle", "unfocused" or "key <virtual-key code>". */
+static int api_idle_state(void *state) {
+    int code;char out[24];
+    if(!argument(state))return 0;
+    if(!focused()){pushstring(state,"unfocused");return 1;}
+    for(code=1;code<256;++code)if(down(code)){snprintf(out,sizeof(out),"key %d",code);pushstring(state,out);return 1;}
+    pushstring(state,"idle");return 1;
+}
 static int api_idle(void *state) {
     int code;
     if(!argument(state)||!focused())return 0;
@@ -122,7 +130,7 @@ static int api_stats(void *state) {
 /* A Lua C function's return value counts pushed results, so push the answer as text. */
 static int api_has_stats(void *state) {pushstring(state,stats_ok?"1":"0");return 1;}
 static const struct lua_reg functions[]={
-    {"self_test",api_self_test},{"poll",api_poll},{"held",api_held},{"idle",api_idle},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
+    {"self_test",api_self_test},{"poll",api_poll},{"held",api_held},{"idle",api_idle},{"idle_state",api_idle_state},{"fold",api_fold},{"item_name",api_item_name},{"stat",api_stat},{"stats",api_stats},{"has_stats",api_has_stats},{NULL,NULL}
 };
 static void register_state(void *state) {
     if(!qh_register_balanced(state,"InventoryPlusNative",functions,gettop,register_library,pop_values))supported=0;
