@@ -1,4 +1,4 @@
--- Inventory Plus 0.7.3 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
+-- Inventory Plus 0.7.4 (native bridge token stays 0.6.0): native category-scoped search, name sorting and provisional damage/armor sorting.
 local function bootstrap()
 local G=_G
 local previous=rawget(G,'InventoryPlus')
@@ -10,7 +10,7 @@ if type(N)~='table' or type(N.self_test)~='function' or type(N.poll)~='function'
 end
 local M=rawget(G,'InventoryPlusModel')
 if type(M)~='table' then log('Row model unavailable; no inventory hooks installed.');return false end
-local S={enabled=true,version='0.7.3-preview',hooks={},waits={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
+local S={enabled=true,version='0.7.4-preview',hooks={},waits={},query='',editing=false,closing=false,ready=false,order='native',matched=0,total=0}
 G.InventoryPlus=S
 -- Release a guard once every key is up, or after `limit` checks regardless: the helper's idle() can
 -- stay false (stuck key, controller mapping, remote session) and a guard must never hold input forever.
@@ -77,7 +77,12 @@ local function card_damage(handle,detail)
   end
   if direct then
    total=(total or 0)+direct+over
-   if detail and (direct>0 or over>0) then detail[#detail+1]=tostring(type(names)=='table' and names[index+1] or index)..' '..direct..'+'..over end
+   if detail and (direct>0 or over>0) then
+    -- diagnostic: the same readers without the bonus flag (cards of ItemScaling-raised items show less over time)
+    local okp,plain=pcall(A.get_weapon_damage,handle,index,false)
+    local okq,plain_over=pcall(A.get_weapon_dot_damage or function()end,handle,index,false)
+    detail[#detail+1]=tostring(type(names)=='table' and names[index+1] or index)..' '..direct..'+'..over..' (no bonus '..tostring(okp and plain)..'+'..tostring(okq and plain_over)..')'
+   end
   end
  end
  return total

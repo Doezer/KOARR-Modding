@@ -1,4 +1,4 @@
-# Inventory Plus — search, sorting and category buttons, 0.7.3 preview
+# Inventory Plus — search, sorting and category buttons, 0.7.4 preview
 
 Find an item by name in your current inventory category, then use the game's
 normal item details and actions. Sort names within the native subcategories
@@ -49,8 +49,8 @@ by the game's item cost, which sets the merchant sell price; the inventory does 
 display it, so it is a sell-price order rather than a number you can check. **Ctrl+D**
 logs the underlying numbers for the selected item to the framework log. An All view remains planned.
 
-[Download 0.7.3 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.3-preview.zip)
-· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.3-preview.zip.sha256)
+[Download 0.7.4 preview](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.4-preview.zip)
+· [SHA-256](https://raw.githubusercontent.com/Doezer/KOARR-Modding/main/inventory-plus/dist/InventoryPlus-0.7.4-preview.zip.sha256)
 
 ## Dependencies
 
