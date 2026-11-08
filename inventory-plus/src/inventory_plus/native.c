@@ -54,13 +54,13 @@ static int api_idle_state(void *state) {
     int code;char out[24];
     if(!argument(state))return 0;
     if(!focused()){pushstring(state,"unfocused");return 1;}
-    for(code=1;code<256;++code)if(down(code)){snprintf(out,sizeof(out),"key %d",code);pushstring(state,out);return 1;}
+    for(code=1;code<256;++code)if(ip_key_matters(code)&&down(code)){snprintf(out,sizeof(out),"key %d",code);pushstring(state,out);return 1;}
     pushstring(state,"idle");return 1;
 }
 static int api_idle(void *state) {
     int code;
     if(!argument(state)||!focused())return 0;
-    for(code=1;code<256;++code)if(down(code))return 0;
+    for(code=1;code<256;++code)if(ip_key_matters(code)&&down(code))return 0;
     return 1;
 }
 /* Invariant Unicode lowercase, preserving accents. Returned text is UTF-8. */

@@ -41,19 +41,6 @@ function M.create(S,log,N)
    or (tutorial and type(tutorial.is_modal_tutorial_active)=='function' and tutorial.is_modal_tutorial_active())
    or (menu and type(menu.is_dragging)=='function' and menu.is_dragging())
  end
-function T.pad_list()
-  local _,W=context()
-  local c=T.list_content;if not c then return end
-  local okh,h=pcall(W.get_height,c.window);local okw,w=pcall(W.get_width,c.window)
-  if not(okh and okw and type(h)=='number')then return end
-  if h==c.padded then return end -- unchanged since our last padding
-  c.width=w
-  if h>c.viewport then
-   c.original=h;c.padded=h+c.reserve
-   pcall(W.resize,c.window,w,c.padded)
-   note('padded list content '..tostring(h)..' -> '..tostring(c.padded))
-  else c.original=nil;c.padded=h end
- end
  function T.close()
   local _,W=context()
   for i=#T.windows,1,-1 do pcall(W.destroy_window,T.windows[i].root)end
@@ -62,8 +49,6 @@ function T.pad_list()
    local g=T.geometry;T.geometry=nil
    pcall(W.move,g.window,g.x,g.y);pcall(W.resize,g.window,g.width,g.height)
   end
-  local c=T.list_content;T.list_content=nil
-  if c and c.original and c.padded and c.padded~=c.original then pcall(W.resize,c.window,c.width,c.original)end
   T.parent=nil;T.last_slot=nil;T.last_visible=nil;T.last_mode=nil;T.last_sig=nil
  end
  function T.cancel()
@@ -251,11 +236,17 @@ function T.pad_list()
    if not ok or parent==cursor then break end
    cursor=parent
   end
-  if event=='DOWN'then T.cancel()end
+  if event=='DOWN'then
+   if T.last_action_frame and (T.frame or 0)-T.last_action_frame<40 then
+    note('click reached another control '..tostring((T.frame or 0)-T.last_action_frame)..' frames after '..tostring(T.last_action))
+   end
+   T.cancel()
+  end
   return false
  end
  function T.update()
   local I,W,L=context()
+  T.frame=(T.frame or 0)+1
   inventory_shell()
   -- Async key state can report release before the queued UP event is dispatched.
   -- Keep ownership through two ledger updates, including events retargeted to
@@ -264,12 +255,17 @@ function T.pad_list()
    if I then I.m_mouse_event_received=false;I.m_moused_over_id=nil end
    T.click_age=(T.click_age or 0)+1
    if N.idle('InventoryPlus')then T.release_ticks=T.release_ticks+1 else T.release_ticks=0 end
-   if T.release_ticks>=2 or T.click_age>=30 then -- bounded: never wait forever on a stuck idle()
+   if (T.release_ticks>=2 or T.click_age>=30) and T.frame>=(T.hold_until or 0) then -- bounded
     T.click_owned=false;T.release_ticks=0
     -- Sort and Find act only after the click is fully released, like tab moves.
     local action=T.queued;T.queued=nil
     local run=action=='sort' and S.cycle_sort or action=='find' and S.open_search
-    if run then local ok,err=pcall(run);if not ok then log('Button action failed: '..tostring(err))end end
+    if run then
+     local ok,err=pcall(run);if not ok then log('Button action failed: '..tostring(err))end
+     -- The rebuild can leave mouse events from rapid clicks queued: keep swallowing for a few frames.
+     T.last_action=action;T.last_action_frame=T.frame
+     T.click_owned=true;T.release_ticks=0;T.click_age=0;T.hold_until=T.frame+6
+    end
    end
   elseif not T.exiting then advance()end
   if not I or not I.m_inited or not I.m_window or not I.m_list_wrapper or not W then return end
@@ -316,22 +312,12 @@ function T.pad_list()
     make_cell(x,y+2*row_height,half).action='sort'
     make_cell(x+half,y+2*row_height,half).action='find'
     W.move(I.m_list_wrapper,x,y+reserved);W.resize(I.m_list_wrapper,width,height-reserved)
-    -- The list's scrolling content window (thousands of units tall) still assumes the full-height
-    -- viewport, so with the viewport shrunk the last rows sit below the reachable scroll range.
-    -- pad_list() adds the reserved height to the content (and again after every native rebuild).
-    T.list_content=nil
-    if type(I.m_list)=='table' then
-     for key,value in pairs(I.m_list)do
-      if type(value)=='userdata' and not T.list_content then
-       T.list_content={window=value,key=tostring(key),viewport=height-reserved,reserve=reserved}
-      end
-     end
-     note('list content window: '..(T.list_content and T.list_content.key or 'none')..'; wrapper height '..tostring(height))
-    end
+    -- Only the wrapper and our own cloned controls are moved or resized. Padding the list's scrolling
+    -- content window (tried in 0.6.9 to 0.7.1) stopped the wheel from scrolling at all, so the last
+    -- rows can sit slightly past the scroll range; that is a known limitation, not worth losing scroll.
    end)
    if not ok then T.close();T.failed=true;log('Category tabs unavailable; native navigation retained: '..tostring(err));return end
   end
-  T.pad_list()
   local visible=W.is_visible(I.m_window) and not S.editing
   local sig=tostring(S.order)..'|'..tostring(S.query)..'|'..tostring(S.matched)..'/'..tostring(S.total)
   if T.last_slot==I.m_selected_slot and T.last_visible==visible and T.last_mode==I.m_curr_mode and T.last_sig==sig then return end

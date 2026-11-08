@@ -802,3 +802,28 @@ Labels. In the 0.7.0 screenshot only `6 Items` and `7 Junk` were visible on the 
 others (`[1 Primary]`, `3 Armor`, ...) did not fit the 160-unit cells and showed only their digit.
 Tabs now use three-letter names (`1 Pri` ... `7 Jnk`). `Sort: Native` and `Find: Ctrl+F` fit.
 
+
+## 0.7.2: the stuck key was Play/Pause; list padding removed (8 November)
+
+The 0.7.1 diagnostic named the blocker: `input not idle after 30 frames (key 179)`. Virtual key
+179 is `0xB3`, the media Play/Pause key, which read as held for the whole session (a headset or
+media controller). `idle()` therefore never became true, which explains the stalled tabs and, in
+0.7.0, the blank second before the native menu returned. The bounded waits from 0.7.1 kept the tabs
+usable (each move waited the full 30 frames), and 0.7.2 stops the cause: `idle()` and `idle_state()`
+ignore browser, volume, media and launch keys (`0xA6..0xB7`) and the IME placeholders (`0xE5`,
+`0xE7`), which are never game input. A C test pins the key classification.
+
+Sort clicks: with idle never true, a Sort or Find click held ownership for the full 30 frames before
+its action ran, so rapid clicks queued behind each other and the late rebuild could hand a stray mouse
+event to the list. With idle working the action runs after about two frames, and after it ran the
+click stays owned for six more frames to swallow events left in the queue by the rebuild. The log
+notes `click reached another control N frames after <action>` if a click still escapes, so the
+cause can be read next time.
+
+Scrolling: the log shows `padded list content 2275 -> 2371` and the tester reports the list could not
+scroll at all, so the padding added in 0.6.9 (which grew the list's scrolling content window to reach
+the last rows) is removed. The wrapper and our own controls are the only windows moved or resized
+(a test asserts the content window is never touched). Consequence: the last row or two can again sit
+slightly past the end of the scroll range, as in 0.6.8. A relayout of the native list after the
+wrapper is resized is the next idea to try, once scrolling is confirmed working again.
+

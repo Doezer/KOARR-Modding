@@ -89,7 +89,9 @@ do
  assert(T.event('DOWN',sort_btn) and T.owns_click() and sorted==0)
  assert(T.event('UP',{}) and sorted==0)
  for _=1,4 do T.update()end
- assert(sorted==1 and found==0 and not T.owns_click())
+ assert(sorted==1 and found==0 and T.owns_click()) -- quiet period swallows queued rapid clicks
+ for _=1,12 do T.update()end
+ assert(not T.owns_click())
  buttons();for _=1,3 do T.update()end;assert(sorted==1) -- never repeats
  buttons();assert(T.event('DOWN',find_btn));T.cancel() -- Back cancels the queued action
  for _=1,4 do T.update()end
@@ -153,25 +155,22 @@ tree.m_path={4242793,2468509}
 -- Visible inventory root and a stale selected slot are not enough to show tabs.
 I.m_list_wrapper.visible=false;T.failed=false;T.update();assert(made==0)
 I.m_list_wrapper.visible=true;T.update();assert(made==1 and T.failed)
--- The list's scrolling content window keeps the full-height viewport's range: pad it by the
--- reserved height (again after each native rebuild) and restore it when the controls go away.
+-- The list's own windows are never resized: padding the scrolling content stopped wheel scrolling in the
+-- game (0.6.9 to 0.7.1), so only the wrapper and the cloned controls change geometry.
 do
  local resized={}
- local content_h=3675
  local real_resize,real_height=WINDOW.resize,WINDOW.get_height
- WINDOW.resize=function(w,width,height)resized[#resized+1]={w=w,h=height};if w==io.stdout then content_h=height end end
- WINDOW.get_height=function(w)if w==io.stdout then return content_h end;return 500 end
+ WINDOW.resize=function(w,width,height)resized[#resized+1]=w end
+ WINDOW.get_height=function()return 500 end
  WINDOW.create_window=function()return {} end
  WINDOW.find_static_type=function()return {} end
- local content=io.stdout -- any userdata stands in for a window handle
+ local content=io.stdout -- any userdata stands in for the list's scrolling content window
  I.m_list={window=content,selected=3}
- T.failed=false;T.windows={};T.geometry=nil;T.list_content=nil
+ T.failed=false;T.windows={};T.geometry=nil
  I.m_selected_slot=2627341;I.m_list_wrapper.visible=true;tree.m_path={4242793,2468509}
- T.update()
- assert(content_h==3675+96) -- padded by the 96 reserved for the tab and button rows
- resized={};T.update();assert(#resized==0) -- unchanged: not padded again
- content_h=3675;T.update();assert(content_h==3675+96) -- the native rebuild reset it: padded again
- T.close();assert(content_h==3675 and T.list_content==nil) -- restored
+ T.update();T.update()
+ for _,w in ipairs(resized)do assert(w~=content,'the list content window must stay untouched')end
+ T.close()
  WINDOW.resize,WINDOW.get_height=real_resize,real_height
 end
 print('Navigation: common-parent traversal, async load, release gate, cancellation and landing-page gating passed')
