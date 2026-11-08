@@ -740,3 +740,39 @@ UI, texture, widget or asset API, and no event system. Anything beyond those thr
 NativeCore, which would make this mod depend on it; that is why Inventory Plus stays on the
 game's own modules plus its own helper DLL (see the Dependencies test).
 
+
+## NativeCore variant: feasibility study (8 November)
+
+Sources read without downloading or running anything: the Nexus page and its archive listing
+(NativeCore V4.6.1, uploaded 4 November by HussiCheezo, tagged AI-generated, 58 downloads),
+and the public source at `HBOdeh/koarr-curved-hud-bars/NativeCore` (README and the 173 KB API
+document are inside the Nexus archive, which needs a login, so they were not read; the Lua and
+overlay sources were). Nothing here was tested in the game.
+
+What it offers that the framework does not:
+
+- **Lua**: `add_panel`/`add_toggle`/`add_slider`/`add_button` (an F8 settings panel persisted in
+  `settings.ini`), `hotkey(vk, mods, fn)`, `notify`, per-frame hooks, `textures.replace`,
+  `text.set`, plus events and input blocking per its description.
+- **Native overlay**: a DLL registers a per-frame draw callback (`overlay_draw_register`) and
+  renders Dear ImGui into the game's D3D11 frame, after the game. The registry is C/C++ only;
+  no Lua function draws arbitrary widgets over the inventory.
+
+What a variant could and could not do:
+
+- The F8 panel is a settings screen, not part of the inventory: it could hold defaults (starting
+  sort, which sorts appear) but not in-inventory buttons.
+- A real overlay UI (tabs with icons, a search box, a sort dropdown) means writing a native
+  ImGui consumer inside this mod's helper DLL, routing mouse and keyboard focus between overlay and
+  game, handling UI scale, resolutions and controllers, and keeping Back usable. The overlay
+  floats above the game UI instead of belonging to it.
+- It would be a hard prerequisite for that variant, and it hooks the D3D11 present chain
+  (MinHook), which can conflict with ReShade (installed on the tester's machine) and other
+  overlays. A commenter on the Nexus page already reports an antivirus flag on the DLL.
+  The mod is days old and iterating quickly (CHANGELOG 19 KB, versions 37 to 46).
+
+Decision: Inventory Plus stays dependency-free. If an NativeCore variant is ever built, it must
+be an optional add-on module that detects NativeCore at runtime and does nothing without it, so a
+single release works with or without it. Worth doing only if clickable native buttons (0.7.0)
+prove insufficient.
+
